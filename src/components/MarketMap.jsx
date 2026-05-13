@@ -43,6 +43,7 @@ const DAY_COLORS_HEX = {
   'Domingo': '#ef4444',       // red-500
 };
 
+
 // Component to dynamically update map center
 function MapUpdater({ center, route }) {
   const map = useMap();
@@ -92,11 +93,16 @@ export default function MarketMap({ markets, userLat, userLon }) {
   };
 
   return (
-    <div className="h-[calc(100vh-150px)] w-full z-0 relative">
+    <div className="flex-1 w-full z-0 relative group flex flex-col min-h-0">
+      {/* Edge Swipe Zone for Mobile */}
+      <div className="absolute left-0 top-0 bottom-0 w-10 z-[1001] pointer-events-auto sm:hidden" aria-hidden="true"></div>
+
       <MapContainer 
         center={center} 
         zoom={12} 
-        className="h-full w-full"
+        scrollWheelZoom={true}
+        dragging={true}
+        className="flex-1 w-full"
       >
         <TileLayer
           className="vibrant-tiles"
