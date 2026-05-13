@@ -3,10 +3,21 @@ import MarketCard from './MarketCard';
 export default function MarketList({ markets, userLat, userLon }) {
   if (markets.length === 0) {
     return (
-      <div className="text-center py-20 px-4">
-        <span className="text-6xl mb-4 block">😢</span>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma feira encontrada</h3>
-        <p className="text-gray-500">Tente mudar os filtros ou busque por outro bairro.</p>
+      <div className="flex flex-col items-center justify-center py-24 px-6 text-center animate-fade-in">
+        <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner ring-8 ring-orange-50/50">
+          🔍
+        </div>
+        <h3 className="text-2xl font-black text-gray-900 mb-3">
+          Ops! Nenhuma feira por aqui
+        </h3>
+        <p className="text-gray-500 max-w-xs mx-auto leading-relaxed font-medium">
+          Não encontramos feiras com esses filtros. Que tal tentar outro bairro ou dia da semana?
+        </p>
+        <div className="mt-10 flex flex-col sm:flex-row gap-3">
+          <div className="text-xs font-bold text-orange-400 uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-full border border-orange-100">
+            Dica: Confira se o bairro está escrito corretamente
+          </div>
+        </div>
       </div>
     );
   }
