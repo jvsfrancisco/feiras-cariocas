@@ -41,13 +41,19 @@ export default function App() {
   // Set 'Today' as default filter on first load
   useEffect(() => {
     const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
-    // Capitalize correctly to match our DAYS array
     const formattedToday = today.charAt(0).toUpperCase() + today.slice(1);
     if (formattedToday !== selectedDay && selectedDay === 'Todos') {
       setSelectedDay(formattedToday);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update Document Title dynamically for accessibility
+  useEffect(() => {
+    const view = viewMode === 'list' ? 'Lista' : 'Mapa';
+    const day = selectedDay === 'Todos' ? 'Todas as Feiras' : selectedDay;
+    document.title = `Feiras Cariocas | ${view} - ${day}`;
+  }, [viewMode, selectedDay]);
 
   // Process and Filter Markets
   const processedMarkets = useMemo(() => {
