@@ -47,14 +47,19 @@ const DAY_COLORS_HEX = {
 // Component to dynamically update map center
 function MapUpdater({ center, route }) {
   const map = useMap();
+  const [hasCenteredOnce, setHasCenteredOnce] = useState(false);
+
   useEffect(() => {
     if (route && route.length > 0) {
       const bounds = L.latLngBounds(route);
       map.fitBounds(bounds, { padding: [50, 50] });
-    } else if (center) {
-      map.setView(center, map.getZoom());
+    } else if (center && !hasCenteredOnce) {
+      // Only center automatically once when location is found
+      map.setView(center, 14); 
+      setHasCenteredOnce(true);
     }
-  }, [center, route, map]);
+  }, [center, route, map, hasCenteredOnce]);
+
   return null;
 }
 
@@ -94,9 +99,6 @@ export default function MarketMap({ markets, userLat, userLon }) {
 
   return (
     <div className="flex-1 w-full z-0 relative group flex flex-col min-h-0">
-      {/* Edge Swipe Zone for Mobile */}
-      <div className="absolute left-0 top-0 bottom-0 w-10 z-[1001] pointer-events-auto sm:hidden" aria-hidden="true"></div>
-
       <MapContainer 
         center={center} 
         zoom={12} 
