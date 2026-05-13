@@ -35,47 +35,48 @@ export default function MarketCard({ market, userLat, userLon, index = 0 }) {
     <div className={`bg-white rounded-3xl shadow-sm border-2 border-orange-50 overflow-hidden hover-bounce flex flex-col h-full transition-all group animate-fade-in opacity-0 ${staggerClass}`}>
       <div className="p-6 flex-1">
         <div className="flex justify-between items-start mb-4">
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${dayColor}`}>
+          <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-md border ${dayColor.replace('bg-', 'bg-transparent text-').replace('text-800', 'text-700 opacity-80')}`}>
             {market.day}
           </span>
           {market.isCommunityAdded && (
-            <span className="text-xs font-bold bg-green-100 text-green-800 border border-green-200 px-3 py-1.5 rounded-full flex items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded-md flex items-center gap-1">
               🌟 Sugerida
             </span>
           )}
         </div>
 
-        <h3 className="text-xl font-extrabold text-gray-900 mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
-          <span className="mr-2">{emoji}</span>
-          Feira {market.bairro}
+        <h3 className="text-xl font-black text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors flex items-center gap-3">
+          <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-orange-50 rounded-xl text-xl transition-all group-hover:scale-110 group-hover:bg-orange-100">{emoji}</span>
+          <span>Feira {market.bairro}</span>
         </h3>
         
-        <div className="space-y-3 mt-5 text-sm text-gray-700 font-medium">
-          <div className="flex items-start gap-2">
-            <span className="mt-0.5 shrink-0 text-lg leading-none">📍</span>
-            <span>
-              <span className="font-bold text-gray-900">{market.address}</span><br/>
-              <span className="text-gray-500">{market.bairro} • {market.ra}</span>
-            </span>
+        <div className="space-y-4 mt-6 text-sm text-gray-700 font-medium border-l-2 border-gray-100 pl-4 ml-1">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Localização</span>
+            <span className="font-bold text-gray-900 leading-tight">{market.address}</span>
+            <span className="text-gray-500 text-xs">{market.bairro} • {market.ra}</span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-lg leading-none">⏰</span>
-            <span>{market.hours}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Horário</span>
+            <span className="font-bold text-gray-800">{market.hours}</span>
           </div>
         </div>
       </div>
 
-      <div className="px-5 py-4 bg-orange-50/50 border-t-2 border-orange-50 flex flex-col gap-3">
+      <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           {market.distance !== undefined ? (
-            <span className="text-sm font-black text-green-600 bg-green-100 px-3 py-1 rounded-full whitespace-nowrap">
-              {market.distance.toFixed(1)} km
-            </span>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Distância</span>
+              <span className="text-sm font-black text-green-600">
+                {market.distance.toFixed(1)} km
+              </span>
+            </div>
           ) : (
-            <span className="text-sm text-gray-400 font-medium whitespace-nowrap">—</span>
+            <span className="text-sm text-gray-400 font-medium">—</span>
           )}
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
             <Navigation className="w-3 h-3" />
             Google Maps
           </div>
@@ -84,21 +85,27 @@ export default function MarketCard({ market, userLat, userLon, index = 0 }) {
         <div className="flex gap-2">
           <button 
             onClick={(e) => handleDirections(e, 'driving')}
-            className="flex-1 py-1.5 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all text-center flex items-center justify-center gap-1"
+            aria-label="Como chegar de carro"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
           >
-            <span className="text-sm">🚗</span> Carro
+            <span className="text-base group-hover/btn:scale-110 transition-transform">🚗</span> 
+            <span>Carro</span>
           </button>
           <button 
             onClick={(e) => handleDirections(e, 'walking')}
-            className="flex-1 py-1.5 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all text-center flex items-center justify-center gap-1"
+            aria-label="Como chegar a pé"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
           >
-            <span className="text-sm">🚶</span> A pé
+            <span className="text-base group-hover/btn:scale-110 transition-transform">🚶</span> 
+            <span>A pé</span>
           </button>
           <button 
             onClick={(e) => handleDirections(e, 'bicycling')}
-            className="flex-1 py-1.5 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all text-center flex items-center justify-center gap-1"
+            aria-label="Como chegar de bicicleta"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
           >
-            <span className="text-sm">🚲</span> Bike
+            <span className="text-base group-hover/btn:scale-110 transition-transform">🚲</span> 
+            <span>Bike</span>
           </button>
         </div>
       </div>
