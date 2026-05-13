@@ -178,9 +178,23 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#2D6A4F] text-green-50 py-8 text-center text-sm font-medium mt-12">
-        <p>Desenvolvido com 💚 para os cariocas</p>
-        <p className="opacity-80 mt-1">Dados da Prefeitura do Rio + contribuições da comunidade</p>
+      <footer className="bg-gradient-to-b from-green-800 to-green-950 text-green-50 py-12 px-6 text-center text-sm font-medium border-t border-green-700/30">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🍉</span>
+            <span className="text-lg font-black tracking-tight bg-gradient-to-r from-orange-400 to-green-400 bg-clip-text text-transparent">
+              Feiras Cariocas
+            </span>
+          </div>
+          <p className="max-w-md mx-auto text-green-100/70 leading-relaxed">
+            Nossa missão é facilitar o acesso a alimentos frescos e fortalecer a economia local do Rio de Janeiro.
+          </p>
+          <div className="h-px w-24 bg-green-700/50 my-2"></div>
+          <p className="font-bold">Desenvolvido com 💚 para os cariocas</p>
+          <p className="opacity-50 text-[11px] uppercase tracking-widest mt-2">
+            © {new Date().getFullYear()} • Dados da Prefeitura do Rio
+          </p>
+        </div>
       </footer>
 
       <AddMarketModal 
