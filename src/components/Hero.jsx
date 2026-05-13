@@ -13,7 +13,7 @@ export default function Hero({ searchTerm, setSearchTerm }) {
 
       <div className="relative z-10 w-full max-w-3xl px-6 text-center animate-fade-in">
         <h2 id="hero-title" className="text-4xl md:text-5xl font-black text-white mb-4 drop-shadow-lg tracking-tight">
-          Feira fresca, perto de você <span aria-hidden="true">🥕</span>
+          Feira fresca, perto de <span className="whitespace-nowrap">você <span aria-hidden="true">🥕</span></span>
         </h2>
         <p className="text-white text-lg md:text-xl mb-10 font-bold drop-shadow-md">
           Apoie o produtor local e descubra as melhores feiras do Rio!

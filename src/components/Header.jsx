@@ -7,11 +7,11 @@ export default function Header({ onAddClick, searchTerm, setSearchTerm, viewMode
         <button 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="flex items-center gap-2 cursor-pointer group shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg outline-none" 
-          aria-label="Feiras Cariocas - Voltar ao topo"
+          aria-label="Olha a Feira - Voltar ao topo"
         >
           <span className="text-3xl group-hover:rotate-12 transition-transform duration-300" aria-hidden="true">🍉</span>
           <h1 className="hidden sm:block text-2xl font-extrabold bg-gradient-to-r from-orange-500 to-green-500 bg-clip-text text-transparent tracking-tight">
-            Feiras Cariocas
+            Olha a Feira
           </h1>
         </button>
         

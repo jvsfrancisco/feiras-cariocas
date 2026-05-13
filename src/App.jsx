@@ -60,7 +60,7 @@ export default function App() {
   useEffect(() => {
     const view = viewMode === 'list' ? 'Lista' : 'Mapa';
     const day = selectedDay === 'Todos' ? 'Todas as Feiras' : selectedDay;
-    document.title = `Feiras Cariocas | ${view} - ${day}`;
+    document.title = `Olha a Feira | ${view} - ${day}`;
   }, [viewMode, selectedDay]);
 
   // Process and Filter Markets
@@ -214,7 +214,7 @@ export default function App() {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">🍉</span>
               <span className="text-lg font-black tracking-tight bg-gradient-to-r from-orange-400 to-green-400 bg-clip-text text-transparent">
-                Feiras Cariocas
+                Olha a Feira
               </span>
             </div>
             <p className="max-w-md mx-auto text-green-100/70 leading-relaxed">
