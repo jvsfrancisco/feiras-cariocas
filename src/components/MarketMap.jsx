@@ -134,26 +134,37 @@ export default function MarketMap({ markets, userLat, userLon }) {
               }}
             >
               <Popup className="vibrant-popup">
-                <div className="text-sm p-4 bg-white min-w-[200px]">
-                  <h4 className="font-black text-gray-900 mb-2 text-base flex items-center gap-1">
-                    {emoji} Feira {market.bairro}
+                <div className="p-1 min-w-[240px]">
+                  <h4 className="font-black text-gray-900 mb-3 text-lg flex items-center gap-2 border-b border-gray-100 pb-2">
+                    <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-gray-50 rounded-lg text-lg grayscale-0">{emoji}</span>
+                    <span>Feira {market.bairro}</span>
                   </h4>
-                  <p className="mb-2 text-gray-700 font-medium">📍 {market.address}</p>
-                  <p className="text-gray-600 mb-4 font-bold bg-orange-50 px-2 py-1 rounded-md inline-block">
-                    ⏰ {market.day} • {market.hours}
-                  </p>
                   
-                  <div className="flex flex-col gap-2">
+                  <div className="space-y-3 mb-5">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Localização</span>
+                      <span className="text-sm font-bold text-gray-800 leading-tight">{market.address}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Horário</span>
+                      <span className="text-sm font-bold text-gray-700 bg-orange-50/50 px-2 py-0.5 rounded-md self-start">
+                        {market.day} • {market.hours}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2.5">
                     {userLat && userLon ? (
                       <>
-                        <div className="flex gap-2 justify-between mb-2 mt-1">
+                        <div className="flex gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100">
                           <button 
                             onClick={(e) => { 
                               e.stopPropagation(); 
                               setTravelMode('driving'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'driving');
                             }}
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[11px] font-bold transition-colors ${travelMode === 'driving' ? 'bg-gray-800 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            title="Ir de carro"
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'driving' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                           >
                             🚗 Carro
                           </button>
@@ -163,7 +174,8 @@ export default function MarketMap({ markets, userLat, userLon }) {
                               setTravelMode('walking'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'walking');
                             }}
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[11px] font-bold transition-colors ${travelMode === 'walking' ? 'bg-gray-800 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            title="Ir a pé (acessível)"
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'walking' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                           >
                             🚶 A pé
                           </button>
@@ -173,7 +185,8 @@ export default function MarketMap({ markets, userLat, userLon }) {
                               setTravelMode('cycling'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'cycling');
                             }}
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[11px] font-bold transition-colors ${travelMode === 'cycling' ? 'bg-gray-800 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            title="Ir de bicicleta"
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'cycling' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                           >
                             🚲 Bike
                           </button>
@@ -181,16 +194,16 @@ export default function MarketMap({ markets, userLat, userLon }) {
                         <button 
                           onClick={() => handleFetchRoute(market.lat, market.lng)}
                           disabled={isLoadingRoute}
-                          className="flex items-center gap-2 text-white px-4 py-2 rounded-xl font-bold transition-colors w-full justify-center shadow-md hover:opacity-90 disabled:opacity-50"
+                          className="flex items-center gap-2 text-white px-4 py-2.5 rounded-xl font-bold transition-all w-full justify-center shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50"
                           style={{ backgroundColor: color }}
                         >
-                          <MapIcon size={16} /> 
+                          <MapIcon size={16} className={isLoadingRoute ? 'animate-spin' : ''} /> 
                           {isLoadingRoute ? 'Calculando...' : 'Ver Rota no Mapa'}
                         </button>
                       </>
                     ) : (
-                      <div className="text-xs text-red-500 font-bold mb-1 text-center">
-                        Localização necessária para rota
+                      <div className="text-[10px] text-orange-600 bg-orange-50 py-2 px-3 rounded-lg font-bold text-center border border-orange-100">
+                        Ative sua localização para ver rotas
                       </div>
                     )}
                     
@@ -198,9 +211,9 @@ export default function MarketMap({ markets, userLat, userLon }) {
                       href={`https://www.google.com/maps/dir/?api=1&origin=${userLat||''},${userLon||''}&destination=${market.lat},${market.lng}&travelmode=${travelMode === 'cycling' ? 'bicycling' : travelMode}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-xl font-bold transition-colors w-full justify-center hover:bg-gray-200"
+                      className="flex items-center gap-2 bg-gray-50 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-xl font-bold transition-colors w-full justify-center text-[11px] border border-gray-100"
                     >
-                      <ExternalLink size={16} /> Google Maps
+                      <ExternalLink size={14} /> Abrir no Google Maps
                     </a>
                   </div>
                 </div>
