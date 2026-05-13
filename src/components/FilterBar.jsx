@@ -15,13 +15,13 @@ const DAY_COLORS_CLASSES = {
 
 const DAY_ACTIVE_CLASSES = {
   'Todos': 'bg-gray-800 text-white shadow-md',
-  'Segunda-Feira': 'bg-slate-600 text-white shadow-md',
-  'Terça-Feira': 'bg-orange-500 text-white shadow-md',
-  'Quarta-Feira': 'bg-yellow-500 text-white shadow-md',
-  'Quinta-Feira': 'bg-green-500 text-white shadow-md',
-  'Sexta-Feira': 'bg-blue-500 text-white shadow-md',
-  'Sábado': 'bg-purple-500 text-white shadow-md',
-  'Domingo': 'bg-red-500 text-white shadow-md',
+  'Segunda-Feira': 'bg-slate-700 text-white shadow-md',
+  'Terça-Feira': 'bg-orange-600 text-white shadow-md',
+  'Quarta-Feira': 'bg-yellow-500 text-orange-950 shadow-md',
+  'Quinta-Feira': 'bg-green-600 text-white shadow-md',
+  'Sexta-Feira': 'bg-blue-600 text-white shadow-md',
+  'Sábado': 'bg-purple-600 text-white shadow-md',
+  'Domingo': 'bg-red-600 text-white shadow-md',
 };
 
 export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setViewMode }) {
