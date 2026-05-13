@@ -3,6 +3,7 @@ import { INITIAL_FEIRAS } from '../data/feiras';
 
 export function useMarkets() {
   const [markets, setMarkets] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Migration: extract user-added markets from legacy storage key
@@ -21,6 +22,7 @@ export function useMarkets() {
     const customMarkets = storedCustom ? JSON.parse(storedCustom) : [];
     
     setMarkets([...INITIAL_FEIRAS, ...customMarkets]);
+    setIsLoading(false);
   }, []);
 
   const addMarket = (newMarket) => {
@@ -49,5 +51,5 @@ export function useMarkets() {
     setMarkets([...INITIAL_FEIRAS, ...updatedCustom]);
   };
 
-  return { markets, addMarket, removeMarket };
+  return { markets, isLoading, addMarket, removeMarket };
 }

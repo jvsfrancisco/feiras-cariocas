@@ -10,7 +10,7 @@ import { sortMarketsByDistance } from './utils/distance';
 import { appendCoordinates } from './utils/geocoding';
 
 export default function App() {
-  const { markets, addMarket } = useMarkets();
+  const { markets, isLoading, addMarket } = useMarkets();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDay, setSelectedDay] = useState('Todos');
   const [viewMode, setViewMode] = useState('list');
@@ -18,30 +18,38 @@ export default function App() {
   
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [isLocationPending, setIsLocationPending] = useState(true);
 
   // Ask for location on mount if not already asked/granted
   useEffect(() => {
-    // Only ask if we don't have it
-    if (!userLocation && !locationError && "geolocation" in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
+          setIsLocationPending(false);
         },
         (error) => {
           console.warn("Geolocation blocked or failed:", error.message);
           setLocationError(true);
+          setIsLocationPending(false);
         }
       );
+    } else {
+      setIsLocationPending(false);
     }
   }, []);
 
   // Set 'Today' as default filter on first load
   useEffect(() => {
     const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
-    const formattedToday = today.charAt(0).toUpperCase() + today.slice(1);
+    const formattedToday = today
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('-');
+      
     if (formattedToday !== selectedDay && selectedDay === 'Todos') {
       setSelectedDay(formattedToday);
     }
@@ -159,11 +167,26 @@ export default function App() {
                 viewMode={viewMode}
                 setViewMode={setViewMode}
               />
+
               <MarketList 
                 markets={processedMarkets} 
                 userLat={userLocation?.lat} 
                 userLon={userLocation?.lng} 
+                isLoading={isLoading}
               />
+
+              {isLocationPending && (
+                <div 
+                  className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-white/90 backdrop-blur-md border border-orange-200 py-3 px-6 rounded-2xl flex items-center gap-3 shadow-2xl animate-bounce-subtle"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="text-xl animate-pulse">📍</span>
+                  <p className="text-sm font-black text-orange-950 whitespace-nowrap">
+                    Buscando feiras perto de você...
+                  </p>
+                </div>
+              )}
             </>
           ) : (
             <>

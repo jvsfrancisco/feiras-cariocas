@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import MarketCard from './MarketCard';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 
-export default function MarketList({ markets, userLat, userLon }) {
+export default function MarketList({ markets, userLat, userLon, isLoading }) {
   const ITEMS_PER_PAGE = 12;
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
@@ -10,6 +10,27 @@ export default function MarketList({ markets, userLat, userLon }) {
   useEffect(() => {
     setVisibleCount(ITEMS_PER_PAGE);
   }, [markets]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full" aria-hidden="true">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 animate-pulse h-[320px]">
+              <div className="flex justify-between mb-4">
+                <div className="w-12 h-12 bg-gray-200 rounded-2xl"></div>
+                <div className="w-24 h-6 bg-gray-100 rounded-lg"></div>
+              </div>
+              <div className="h-6 bg-gray-200 rounded-md w-3/4 mb-3"></div>
+              <div className="h-4 bg-gray-100 rounded-md w-full mb-2"></div>
+              <div className="h-4 bg-gray-100 rounded-md w-1/2 mb-6"></div>
+              <div className="h-12 bg-gray-200 rounded-xl w-full mt-auto"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (markets.length === 0) {
     return (
@@ -55,7 +76,7 @@ export default function MarketList({ markets, userLat, userLon }) {
           <button
             onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
             aria-label={`Ver mais ${ITEMS_PER_PAGE} feiras`}
-            className="group flex items-center gap-3 bg-white hover:bg-orange-500 text-orange-600 hover:text-white px-8 py-4 rounded-2xl font-black text-lg transition-all shadow-xl hover:shadow-orange-200 border-2 border-orange-100 hover:border-orange-500 focus-visible:ring-4 focus-visible:ring-orange-500 focus:outline-none active:scale-95"
+            className="group flex items-center gap-3 bg-white hover:bg-orange-500 text-orange-700 hover:text-white px-8 py-4 rounded-2xl font-black text-lg transition-all shadow-xl hover:shadow-orange-200 border-2 border-orange-100 hover:border-orange-500 focus-visible:ring-4 focus-visible:ring-orange-500 focus:outline-none active:scale-95"
           >
             <span>Ver mais feiras</span>
             <ChevronDown className="group-hover:translate-y-1 transition-transform" aria-hidden="true" />
