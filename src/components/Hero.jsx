@@ -3,13 +3,12 @@ import { Search } from 'lucide-react';
 export default function Hero({ searchTerm, setSearchTerm }) {
   return (
     <section className="relative h-[20rem] w-full flex items-center justify-center overflow-hidden" aria-labelledby="hero-title">
-      {/* Background Image */}
+      {/* Background Gradient */}
       <div 
-        className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform duration-1000 hover:scale-105"
-        style={{ backgroundImage: 'url(/hero.png)' }}
+        className="absolute inset-0 w-full h-full bg-gradient-vibrant"
         aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-gradient-vibrant mix-blend-multiply"></div>
+        <div className="absolute inset-0 bg-black/5 mix-blend-multiply"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-3xl px-6 text-center animate-fade-in">
