@@ -61,7 +61,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
             <input 
               required
               type="text" 
-              className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all placeholder:text-gray-400 font-medium"
+              className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all placeholder:text-gray-400 font-medium"
               placeholder="Ex: Rua Voluntários da Pátria"
               value={formData.address}
               onChange={e => setFormData({...formData, address: e.target.value})}
@@ -74,7 +74,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
               <input 
                 required
                 type="text" 
-                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all placeholder:text-gray-400 font-medium"
+                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all placeholder:text-gray-400 font-medium"
                 placeholder="Ex: Botafogo"
                 value={formData.bairro}
                 onChange={e => setFormData({...formData, bairro: e.target.value})}
@@ -83,7 +83,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">Dia</label>
               <select 
-                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 outline-none bg-white transition-all text-gray-700 font-bold"
+                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 bg-white transition-all text-gray-700 font-bold"
                 value={formData.day}
                 onChange={e => setFormData({...formData, day: e.target.value})}
               >
@@ -98,7 +98,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
               <input 
                 required
                 type="time" 
-                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all text-gray-700 font-medium"
+                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all text-gray-700 font-medium"
                 value={formData.timeStart}
                 onChange={e => setFormData({...formData, timeStart: e.target.value})}
               />
@@ -108,7 +108,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
               <input 
                 required
                 type="time" 
-                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all text-gray-700 font-medium"
+                className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all text-gray-700 font-medium"
                 value={formData.timeEnd}
                 onChange={e => setFormData({...formData, timeEnd: e.target.value})}
               />

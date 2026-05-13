@@ -25,7 +25,7 @@ export default function Hero({ searchTerm, setSearchTerm }) {
           </div>
           <input
             type="text"
-            className="block w-full pl-14 pr-6 py-4 rounded-full border-4 border-white/20 bg-white text-gray-900 placeholder:text-gray-400 focus:border-white focus:ring-0 sm:text-lg font-medium shadow-2xl transition-all"
+            className="block w-full pl-14 pr-6 py-4 rounded-full border-4 border-white/20 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-orange-500/30 focus:border-white sm:text-lg font-medium shadow-2xl transition-all duration-300"
             placeholder="Qual o seu bairro? Ex: Botafogo"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
