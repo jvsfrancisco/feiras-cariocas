@@ -4,12 +4,16 @@ export default function Header({ onAddClick, searchTerm, setSearchTerm, viewMode
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-orange-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[4rem] flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 cursor-pointer group shrink-0" aria-label="Feiras Cariocas - Página inicial">
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex items-center gap-2 cursor-pointer group shrink-0 focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg outline-none" 
+          aria-label="Feiras Cariocas - Voltar ao topo"
+        >
           <span className="text-3xl group-hover:rotate-12 transition-transform duration-300" aria-hidden="true">🍉</span>
           <h1 className="hidden sm:block text-2xl font-extrabold bg-gradient-to-r from-orange-500 to-green-500 bg-clip-text text-transparent tracking-tight">
             Feiras Cariocas
           </h1>
-        </div>
+        </button>
         
         {/* Search Bar (Only visible in Map view with animation) */}
         {viewMode === 'map' ? (
