@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @theme {
   --font-sans: "Inter", sans-serif;
@@ -127,8 +127,4 @@
     border-radius: 50% !important;
   }
   
-  /* Removed intense vibrant-tiles filter as per user request */
-  .vibrant-tiles {
-    /* filter: saturate(1.8) contrast(1.15) brightness(0.95); */
-  }
 }
