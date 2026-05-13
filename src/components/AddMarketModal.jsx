@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 const DIAS = ['Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado', 'Domingo'];
 
 export default function AddMarketModal({ isOpen, onClose, onAdd }) {
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [formData, setFormData] = useState({
     address: '',
     bairro: '',
@@ -16,15 +17,36 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsGeocoding(true);
+
+    let lat = null;
+    let lng = null;
+
+    try {
+      // Try to geocode the address in Rio de Janeiro
+      const query = `${formData.address}, ${formData.bairro}, Rio de Janeiro, Brazil`;
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        lat = parseFloat(data[0].lat);
+        lng = parseFloat(data[0].lon);
+      }
+    } catch (error) {
+      console.error("Geocoding failed:", error);
+    }
     
     onAdd({
       address: formData.address,
       bairro: formData.bairro,
       day: formData.day,
       hours: `${formData.timeStart}–${formData.timeEnd}`,
-      ra: formData.ra
+      ra: formData.ra,
+      lat: lat,
+      lng: lng,
+      isCommunityAdded: true
     });
 
     confetti({
@@ -34,6 +56,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
       colors: ['#22c55e', '#f97316', '#eab308']
     });
 
+    setIsGeocoding(false);
     onClose();
     setFormData({
       address: '', bairro: '', day: 'Sexta-Feira', timeStart: '07:00', timeEnd: '13:00', ra: 'Outra'
@@ -143,9 +166,10 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
             </button>
             <button 
               type="submit"
-              className="w-2/3 bg-green-600 hover:bg-green-700 text-white font-black py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-green-500 outline-none"
+              disabled={isGeocoding}
+              className="w-2/3 bg-green-600 hover:bg-green-700 text-white font-black py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-green-500 outline-none disabled:opacity-70 disabled:cursor-wait"
             >
-              Salvar Feira
+              {isGeocoding ? 'Buscando Local...' : 'Salvar Feira'}
             </button>
           </div>
         </form>
