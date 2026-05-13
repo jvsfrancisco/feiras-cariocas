@@ -57,8 +57,9 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">Endereço</label>
+            <label htmlFor="market-address" className="block text-sm font-bold text-gray-700 mb-1.5 cursor-pointer">Endereço</label>
             <input 
+              id="market-address"
               required
               type="text" 
               className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all placeholder:text-gray-400 font-medium"
@@ -70,8 +71,9 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Bairro</label>
+              <label htmlFor="market-bairro" className="block text-sm font-bold text-gray-700 mb-1.5 cursor-pointer">Bairro</label>
               <input 
+                id="market-bairro"
                 required
                 type="text" 
                 className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all placeholder:text-gray-400 font-medium"
@@ -81,8 +83,9 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Dia</label>
+              <label htmlFor="market-day" className="block text-sm font-bold text-gray-700 mb-1.5 cursor-pointer">Dia</label>
               <select 
+                id="market-day"
                 className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 bg-white transition-all text-gray-700 font-bold"
                 value={formData.day}
                 onChange={e => setFormData({...formData, day: e.target.value})}
@@ -94,8 +97,9 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Início</label>
+              <label htmlFor="time-start" className="block text-sm font-bold text-gray-700 mb-1.5 cursor-pointer">Início</label>
               <input 
+                id="time-start"
                 required
                 type="time" 
                 className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all text-gray-700 font-medium"
@@ -104,8 +108,9 @@ export default function AddMarketModal({ isOpen, onClose, onAdd }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Fim</label>
+              <label htmlFor="time-end" className="block text-sm font-bold text-gray-700 mb-1.5 cursor-pointer">Fim</label>
               <input 
+                id="time-end"
                 required
                 type="time" 
                 className="w-full rounded-xl border-2 border-orange-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 transition-all text-gray-700 font-medium"
