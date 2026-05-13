@@ -19,7 +19,8 @@ export default function Header({ onAddClick, searchTerm, setSearchTerm, viewMode
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-4 py-2 rounded-full border-2 border-orange-100 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 text-sm font-medium shadow-sm transition-all duration-300"
+              aria-label="Buscar feiras por bairro"
+              className="block w-full pl-10 pr-4 py-2.5 rounded-full border-2 border-orange-100 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-400 text-sm font-medium shadow-sm transition-all duration-300"
               placeholder="Buscar por bairro..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -31,7 +32,8 @@ export default function Header({ onAddClick, searchTerm, setSearchTerm, viewMode
         
         <button 
           onClick={onAddClick}
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-full font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 shrink-0"
+          aria-label="Sugerir uma nova feira"
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 md:px-6 py-2.5 rounded-full font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 shrink-0"
         >
           <Plus size={18} strokeWidth={3} />
           <span className="hidden md:inline">Adicionar</span>
