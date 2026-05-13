@@ -3,25 +3,25 @@ import { Map, List } from 'lucide-react';
 const DAYS = ['Todos', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado', 'Domingo'];
 
 const DAY_COLORS_CLASSES = {
-  'Todos': 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200',
-  'Segunda-Feira': 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200',
-  'Terça-Feira': 'bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200',
-  'Quarta-Feira': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200',
-  'Quinta-Feira': 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200',
-  'Sexta-Feira': 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200',
-  'Sábado': 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200',
-  'Domingo': 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200',
+  'Todos': 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+  'Segunda-Feira': 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+  'Terça-Feira': 'bg-orange-100 text-orange-700 hover:bg-orange-200',
+  'Quarta-Feira': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
+  'Quinta-Feira': 'bg-green-100 text-green-700 hover:bg-green-200',
+  'Sexta-Feira': 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+  'Sábado': 'bg-purple-100 text-purple-700 hover:bg-purple-200',
+  'Domingo': 'bg-red-100 text-red-700 hover:bg-red-200',
 };
 
 const DAY_ACTIVE_CLASSES = {
-  'Todos': 'bg-gray-800 text-white border-gray-800 shadow-md',
-  'Segunda-Feira': 'bg-slate-600 text-white border-slate-600 shadow-md',
-  'Terça-Feira': 'bg-orange-500 text-white border-orange-500 shadow-md',
-  'Quarta-Feira': 'bg-yellow-500 text-white border-yellow-500 shadow-md',
-  'Quinta-Feira': 'bg-green-500 text-white border-green-500 shadow-md',
-  'Sexta-Feira': 'bg-blue-500 text-white border-blue-500 shadow-md',
-  'Sábado': 'bg-purple-500 text-white border-purple-500 shadow-md',
-  'Domingo': 'bg-red-500 text-white border-red-500 shadow-md',
+  'Todos': 'bg-gray-800 text-white shadow-md',
+  'Segunda-Feira': 'bg-slate-600 text-white shadow-md',
+  'Terça-Feira': 'bg-orange-500 text-white shadow-md',
+  'Quarta-Feira': 'bg-yellow-500 text-white shadow-md',
+  'Quinta-Feira': 'bg-green-500 text-white shadow-md',
+  'Sexta-Feira': 'bg-blue-500 text-white shadow-md',
+  'Sábado': 'bg-purple-500 text-white shadow-md',
+  'Domingo': 'bg-red-500 text-white shadow-md',
 };
 
 export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setViewMode }) {
@@ -43,7 +43,7 @@ export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setVi
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setSelectedDay(day)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all border ${baseClass} ${isActive ? 'scale-105 ring-2 ring-offset-2 ring-orange-200' : 'hover:scale-102 opacity-80 hover:opacity-100'}`}
+                  className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all ${baseClass} ${isActive ? 'scale-105 shadow-md z-10' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
                 >
                   {day}
                 </button>

@@ -46,7 +46,9 @@ export default function MarketCard({ market, userLat, userLon, index = 0 }) {
         </div>
 
         <h3 className="text-xl font-black text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors flex items-center gap-3">
-          <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-orange-50 rounded-xl text-xl transition-all group-hover:scale-110 group-hover:bg-orange-100">{emoji}</span>
+          <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-orange-50 rounded-xl text-xl transition-all group-hover:bg-orange-100 overflow-visible">
+            <span className="transition-transform duration-300 group-hover:scale-125">{emoji}</span>
+          </span>
           <span>Feira {market.bairro}</span>
         </h3>
         
@@ -86,15 +88,15 @@ export default function MarketCard({ market, userLat, userLon, index = 0 }) {
           <button 
             onClick={(e) => handleDirections(e, 'driving')}
             aria-label="Como chegar de carro"
-            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[11px] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap"
           >
             <span className="text-base group-hover/btn:scale-110 transition-transform">🚗</span> 
             <span>Carro</span>
           </button>
           <button 
             onClick={(e) => handleDirections(e, 'walking')}
-            aria-label="Como chegar a pé"
-            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
+            aria-label="Como chegar a pé ou com acessibilidade"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[11px] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap"
           >
             <span className="text-base group-hover/btn:scale-110 transition-transform">🚶</span> 
             <span>A pé</span>
@@ -102,7 +104,7 @@ export default function MarketCard({ market, userLat, userLon, index = 0 }) {
           <button 
             onClick={(e) => handleDirections(e, 'bicycling')}
             aria-label="Como chegar de bicicleta"
-            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 group/btn"
+            className="flex-1 py-2 px-2 bg-white text-gray-600 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[11px] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap"
           >
             <span className="text-base group-hover/btn:scale-110 transition-transform">🚲</span> 
             <span>Bike</span>
