@@ -30,8 +30,15 @@ export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setVi
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
         
         {/* Days Scrollable Row with Fade Mask */}
-        <div className="relative w-full sm:w-auto group">
-          <div className="flex overflow-x-auto no-scrollbar gap-2 py-2 px-2 scroll-smooth" role="tablist" aria-label="Filtrar por dia da semana">
+        <div 
+          className="relative w-full sm:w-auto group"
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="flex overflow-x-auto no-scrollbar gap-2 py-2 px-2 scroll-smooth touch-pan-x" 
+            role="tablist" 
+            aria-label="Filtrar por dia da semana"
+          >
             <div className="w-2 shrink-0" />
             {DAYS.map(day => {
               const isActive = selectedDay === day;
@@ -59,7 +66,12 @@ export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setVi
         </div>
 
         {/* View Toggle */}
-        <div className="flex bg-gray-100/80 p-[0.25rem] rounded-xl shrink-0 border border-gray-200" role="tablist" aria-label="Alternar modo de exibição">
+        <div 
+          className="flex bg-gray-100/80 p-[0.25rem] rounded-xl shrink-0 border border-gray-200" 
+          role="tablist" 
+          aria-label="Alternar modo de exibição"
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <button
             role="tab"
             aria-selected={viewMode === 'list'}
