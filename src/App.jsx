@@ -94,6 +94,37 @@ export default function App() {
     return withCoords;
   }, [markets, searchTerm, selectedDay, userLocation]);
 
+  // Swipe logic
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 70;
+    const isRightSwipe = distance < -70;
+
+    if (isLeftSwipe && viewMode === 'list') {
+      setViewMode('map');
+    }
+    if (isRightSwipe && viewMode === 'map') {
+      // Allow swipe from left edge to go back to list (iOS style)
+      if (touchStart < 60) {
+        setViewMode('list');
+      }
+    }
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FEFAE0]">
       <Header 
@@ -103,31 +134,47 @@ export default function App() {
         viewMode={viewMode}
       />
       
-      {viewMode === 'list' && (
-        <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      )}
-
-      <FilterBar 
-        selectedDay={selectedDay} 
-        setSelectedDay={setSelectedDay}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
-
-      <main className="flex-1 relative">
-        {viewMode === 'list' ? (
-          <MarketList 
-            markets={processedMarkets} 
-            userLat={userLocation?.lat} 
-            userLon={userLocation?.lng} 
-          />
-        ) : (
-          <MarketMap 
-            markets={processedMarkets} 
-            userLat={userLocation?.lat} 
-            userLon={userLocation?.lng}
-          />
-        )}
+      <main 
+        className="flex-1 flex flex-col relative overflow-x-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div 
+          key={viewMode} 
+          className={`flex-1 flex flex-col w-full ${viewMode === 'list' ? 'animate-slide-left' : 'animate-slide-right'}`}
+        >
+          {viewMode === 'list' ? (
+            <>
+              <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+              <FilterBar 
+                selectedDay={selectedDay} 
+                setSelectedDay={setSelectedDay}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+              />
+              <MarketList 
+                markets={processedMarkets} 
+                userLat={userLocation?.lat} 
+                userLon={userLocation?.lng} 
+              />
+            </>
+          ) : (
+            <>
+              <FilterBar 
+                selectedDay={selectedDay} 
+                setSelectedDay={setSelectedDay}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+              />
+              <MarketMap 
+                markets={processedMarkets} 
+                userLat={userLocation?.lat} 
+                userLon={userLocation?.lng}
+              />
+            </>
+          )}
+        </div>
       </main>
 
       {/* Footer */}

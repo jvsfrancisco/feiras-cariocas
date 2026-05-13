@@ -12,7 +12,7 @@ const DAY_COLORS = {
 
 const RANDOM_EMOJIS = ['🍎', '🥬', '🥕', '🍇', '🌽', '🍊', '🥑', '🍅'];
 
-export default function MarketCard({ market, userLat, userLon }) {
+export default function MarketCard({ market, userLat, userLon, index = 0 }) {
   const dayColor = DAY_COLORS[market.day] || 'bg-gray-100 text-gray-800 border-gray-200';
   
   // Deterministic emoji based on id or address length so it doesn't change on render
@@ -29,8 +29,10 @@ export default function MarketCard({ market, userLat, userLon }) {
     }
   };
 
+  const staggerClass = index % 3 === 0 ? '' : index % 3 === 1 ? 'stagger-1' : 'stagger-2';
+
   return (
-    <div className="bg-white rounded-3xl shadow-sm border-2 border-orange-50 overflow-hidden hover-bounce flex flex-col h-full transition-all group">
+    <div className={`bg-white rounded-3xl shadow-sm border-2 border-orange-50 overflow-hidden hover-bounce flex flex-col h-full transition-all group animate-fade-in opacity-0 ${staggerClass}`}>
       <div className="p-6 flex-1">
         <div className="flex justify-between items-start mb-4">
           <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${dayColor}`}>

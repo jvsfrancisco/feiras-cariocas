@@ -92,7 +92,7 @@ export default function MarketMap({ markets, userLat, userLon }) {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] w-full z-0 relative">
+    <div className="h-[calc(100vh-150px)] w-full z-0 relative">
       <MapContainer 
         center={center} 
         zoom={12} 
