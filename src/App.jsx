@@ -100,10 +100,11 @@ export default function App() {
         onAddClick={() => setIsAddModalOpen(true)} 
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        viewMode={viewMode}
       />
       
       {viewMode === 'list' && (
-        <Hero />
+        <Hero searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       )}
 
       <FilterBar 

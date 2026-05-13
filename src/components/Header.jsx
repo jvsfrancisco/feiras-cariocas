@@ -1,6 +1,6 @@
 import { Plus, Search } from 'lucide-react';
 
-export default function Header({ onAddClick, searchTerm, setSearchTerm }) {
+export default function Header({ onAddClick, searchTerm, setSearchTerm, viewMode }) {
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-orange-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -11,19 +11,23 @@ export default function Header({ onAddClick, searchTerm, setSearchTerm }) {
           </h1>
         </div>
         
-        {/* Search Bar */}
-        <div className="flex-1 max-w-md relative transition-all">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+        {/* Search Bar (Only visible in Map view) */}
+        {viewMode === 'map' ? (
+          <div className="flex-1 max-w-md relative transition-all">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-4 py-2 rounded-full border-2 border-orange-100 bg-white text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-0 text-sm font-medium shadow-sm transition-all"
+              placeholder="Buscar por bairro..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-4 py-2 rounded-full border-2 border-orange-100 bg-white text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-0 text-sm font-medium shadow-sm transition-all"
-            placeholder="Buscar por bairro..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        ) : (
+          <div className="flex-1"></div>
+        )}
         
         <button 
           onClick={onAddClick}
