@@ -10,10 +10,17 @@
 }
 
 @layer base {
-  body {
+  html, body {
     background-color: var(--color-warm-bg);
     color: #1f2937;
     font-family: var(--font-sans);
+    overscroll-behavior: none;
+    overflow-x: hidden;
+    height: 100%;
+  }
+  
+  body {
+    min-height: 100dvh;
   }
   
   button, 

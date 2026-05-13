@@ -123,15 +123,16 @@ export default function App() {
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 70;
-    const isRightSwipe = distance < -70;
+    const isLeftSwipe = distance > 100;
+    const isRightSwipe = distance < -100;
 
     if (isLeftSwipe && viewMode === 'list') {
       setViewMode('map');
     }
     if (isRightSwipe && viewMode === 'map') {
-      // Allow swipe from left edge to go back to list (iOS style)
-      if (touchStart < 60) {
+      // Avoid conflict with system 'back' gesture (usually 0-20px)
+      // but still allow an intentional swipe from the left-ish area
+      if (touchStart > 30 && touchStart < 120) {
         setViewMode('list');
       }
     }
@@ -149,7 +150,7 @@ export default function App() {
       />
       
       <main 
-        className={`flex-1 flex flex-col relative ${viewMode === 'map' ? 'h-screen overflow-hidden' : 'overflow-x-hidden'}`}
+        className={`flex-1 flex flex-col relative ${viewMode === 'map' ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden'}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
