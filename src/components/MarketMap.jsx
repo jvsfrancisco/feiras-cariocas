@@ -117,9 +117,13 @@ export default function MarketMap({ markets, userLat, userLon }) {
         )}
 
         {userLat && userLon && (
-          <Marker position={[userLat, userLon]} icon={createEmojiIcon('📍', '#111827')}>
+          <Marker 
+            position={[userLat, userLon]} 
+            icon={createEmojiIcon('📍', '#111827')}
+            alt="Sua localização atual"
+          >
             <Popup className="vibrant-popup">
-              <div className="p-3 text-center font-bold">Você está aqui</div>
+              <div className="p-3 text-center font-bold text-[0.9rem]">Você está aqui</div>
             </Popup>
           </Marker>
         )}
@@ -135,25 +139,26 @@ export default function MarketMap({ markets, userLat, userLon }) {
               key={market.id} 
               position={[market.lat, market.lng]}
               icon={createEmojiIcon(emoji, color)}
+              alt={`Feira de ${market.bairro} em ${market.address} no dia ${market.day}`}
               eventHandlers={{
-                click: () => setActiveRoute(null) // clear route when clicking another pin
+                click: () => setActiveRoute(null)
               }}
             >
               <Popup className="vibrant-popup">
-                <div className="p-1 min-w-[240px]">
+                <div className="p-1 min-w-[15rem]">
                   <h4 className="font-black text-gray-900 mb-3 text-lg flex items-center gap-2 border-b border-gray-100 pb-2">
-                    <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-gray-50 rounded-lg text-lg grayscale-0">{emoji}</span>
+                    <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-gray-50 rounded-lg text-lg grayscale-0" aria-hidden="true">{emoji}</span>
                     <span>Feira {market.bairro}</span>
                   </h4>
                   
                   <div className="space-y-3 mb-5">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Localização</span>
+                      <span className="text-[0.65rem] uppercase font-bold text-gray-700 tracking-wider">Localização</span>
                       <span className="text-sm font-bold text-gray-800 leading-tight">{market.address}</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Horário</span>
-                      <span className="text-sm font-bold text-gray-700 bg-orange-50/50 px-2 py-0.5 rounded-md self-start">
+                      <span className="text-[0.65rem] uppercase font-bold text-gray-700 tracking-wider">Horário</span>
+                      <span className="text-sm font-bold text-gray-800 bg-orange-50 px-2 py-0.5 rounded-md self-start">
                         {market.day} • {market.hours}
                       </span>
                     </div>
@@ -162,17 +167,18 @@ export default function MarketMap({ markets, userLat, userLon }) {
                   <div className="flex flex-col gap-2.5">
                     {userLat && userLon ? (
                       <>
-                        <div className="flex gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                        <nav className="flex gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100" aria-label="Modo de transporte">
                           <button 
                             onClick={(e) => { 
                               e.stopPropagation(); 
                               setTravelMode('driving'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'driving');
                             }}
-                            title="Ir de carro"
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'driving' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            aria-label="Calcular rota de carro"
+                            aria-pressed={travelMode === 'driving'}
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[0.65rem] font-bold transition-all focus-visible:ring-2 focus-visible:ring-orange-500 outline-none ${travelMode === 'driving' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'}`}
                           >
-                            🚗 Carro
+                            <span aria-hidden="true">🚗</span> Carro
                           </button>
                           <button 
                             onClick={(e) => { 
@@ -180,10 +186,11 @@ export default function MarketMap({ markets, userLat, userLon }) {
                               setTravelMode('walking'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'walking');
                             }}
-                            title="Ir a pé (acessível)"
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'walking' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            aria-label="Calcular rota a pé"
+                            aria-pressed={travelMode === 'walking'}
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[0.65rem] font-bold transition-all focus-visible:ring-2 focus-visible:ring-orange-500 outline-none ${travelMode === 'walking' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'}`}
                           >
-                            🚶 A pé
+                            <span aria-hidden="true">🚶</span> A pé
                           </button>
                           <button 
                             onClick={(e) => { 
@@ -191,25 +198,27 @@ export default function MarketMap({ markets, userLat, userLon }) {
                               setTravelMode('cycling'); 
                               if (activeRoute) handleFetchRoute(market.lat, market.lng, 'cycling');
                             }}
-                            title="Ir de bicicleta"
-                            className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all ${travelMode === 'cycling' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            aria-label="Calcular rota de bicicleta"
+                            aria-pressed={travelMode === 'cycling'}
+                            className={`flex-1 py-1.5 px-1 rounded-lg text-[0.65rem] font-bold transition-all focus-visible:ring-2 focus-visible:ring-orange-500 outline-none ${travelMode === 'cycling' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'}`}
                           >
-                            🚲 Bike
+                            <span aria-hidden="true">🚲</span> Bike
                           </button>
-                        </div>
+                        </nav>
                         <button 
                           onClick={() => handleFetchRoute(market.lat, market.lng)}
                           disabled={isLoadingRoute}
-                          className="flex items-center gap-2 text-white px-4 py-2.5 rounded-xl font-bold transition-all w-full justify-center shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50"
+                          aria-label={isLoadingRoute ? 'Calculando rota' : `Ver rota de ${travelMode} no mapa`}
+                          className="flex items-center gap-2 text-white px-4 py-2.5 rounded-xl font-bold transition-all w-full justify-center shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-orange-500 outline-none active:scale-95 disabled:opacity-50"
                           style={{ backgroundColor: color }}
                         >
-                          <MapIcon size={16} className={isLoadingRoute ? 'animate-spin' : ''} /> 
-                          {isLoadingRoute ? 'Calculando...' : 'Ver Rota no Mapa'}
+                          <MapIcon size={16} aria-hidden="true" className={isLoadingRoute ? 'animate-spin' : ''} /> 
+                          <span role="status">{isLoadingRoute ? 'Calculando...' : 'Ver Rota no Mapa'}</span>
                         </button>
                       </>
                     ) : (
-                      <div className="text-[10px] text-orange-600 bg-orange-50 py-2 px-3 rounded-lg font-bold text-center border border-orange-100">
-                        Ative sua localização para ver rotas
+                      <div className="text-[0.65rem] text-orange-900 bg-orange-50 py-2 px-3 rounded-lg font-black text-center border border-orange-100" role="alert">
+                        <span aria-hidden="true">⚠️</span> Ative sua localização para ver rotas
                       </div>
                     )}
                     
@@ -217,9 +226,10 @@ export default function MarketMap({ markets, userLat, userLon }) {
                       href={`https://www.google.com/maps/dir/?api=1&origin=${userLat||''},${userLon||''}&destination=${market.lat},${market.lng}&travelmode=${travelMode === 'cycling' ? 'bicycling' : travelMode}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2 bg-gray-50 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-xl font-bold transition-colors w-full justify-center text-[11px] border border-gray-100"
+                      aria-label="Abrir direções no aplicativo Google Maps"
+                      className="flex items-center gap-2 bg-gray-50 text-gray-700 hover:text-gray-900 px-4 py-2 rounded-xl font-bold transition-colors w-full justify-center text-[0.7rem] border border-gray-100 focus-visible:ring-2 focus-visible:ring-gray-500 outline-none"
                     >
-                      <ExternalLink size={14} /> Abrir no Google Maps
+                      <ExternalLink size={14} aria-hidden="true" /> Abrir no Google Maps
                     </a>
                   </div>
                 </div>
