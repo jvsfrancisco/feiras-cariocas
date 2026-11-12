@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import { LocateFixed, TriangleAlert } from 'lucide-react';
+import CarregandoMapa from './CarregandoMapa';
 import FeiraCartao from './FeiraCartao';
 import AvisoPrivacidade from './AvisoPrivacidade';
 import { aceitarPrivacidade, backendAtivo, CODIGO_PRIVACIDADE_PENDENTE, mensagemParaCodigo, MENSAGEM_SEM_CONEXAO_TRECHO, privacidadeAceita, proporTrecho, salvarPropostaMinha } from '../api';
@@ -172,6 +173,14 @@ export default function MarketMap({
   const [zoomAlto, setZoomAlto] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [erroMapa, setErroMapa] = useState(false);
+  // Tela de carregamento: some com fade de 200 ms quando o mapa fica pronto (ou dá erro) e depois desmonta.
+  const [carregandoMontado, setCarregandoMontado] = useState(true);
+  const carregandoSaindo = pronto || erroMapa;
+  useEffect(() => {
+    if (!carregandoSaindo) return undefined;
+    const id = setTimeout(() => setCarregandoMontado(false), 200);
+    return () => clearTimeout(id);
+  }, [carregandoSaindo]);
   const [desenho, setDesenho] = useState(null);
   const [enviandoTrecho, setEnviandoTrecho] = useState(false);
 
@@ -832,6 +841,14 @@ export default function MarketMap({
   return (
     <div className="map-screen flex-1 w-full z-0 relative flex flex-col min-h-0 bg-[#F1F0E9]">
       <div ref={containerRef} className="flex-1 w-full" role="region" aria-label="Mapa das feiras" />
+
+      {/* Abaixo da busca e do botão de lista (z-[1000]): em rede lenta dá para trocar para a lista */}
+      {carregandoMontado && (
+        <CarregandoMapa
+          aria-hidden={carregandoSaindo ? true : undefined}
+          className={`absolute inset-0 z-[960]transition-opacity duration-200 motion-reduce:transition-none ${carregandoSaindo ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        />
+      )}
 
       {erroMapa && (
         <p role="alert" className="absolute inset-x-4 top-1/2 -translate-y-1/2 mx-auto max-w-sm z-[900] bg-papel rounded-2xl p-4 text-sm leading-6 text-tinta flex items-start gap-2 shadow-[0_8px_24px_rgba(27,42,34,0.18)]">

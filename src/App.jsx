@@ -10,6 +10,7 @@ import { acontecendoAgora } from './utils/diaCor';
 import { regiaoDaFeira } from './utils/regiao';
 import AddMarketModal from './components/AddMarketModal';
 import Aviso from './components/Aviso';
+import CarregandoMapa from './components/CarregandoMapa';
 import AvisoPrivacidade from './components/AvisoPrivacidade';
 import ConfirmPrompt from './components/ConfirmPrompt';
 import { useMarkets } from './hooks/useMarkets';
@@ -155,7 +156,15 @@ export default function App() {
     avisoTimerRef.current = setTimeout(() => {
       setAviso('');
       avisoTimerRef.current = null;
-    }, 4000);
+    }, 6000);
+  }, []);
+
+  const fecharAviso = useCallback(() => {
+    if (avisoTimerRef.current) {
+      clearTimeout(avisoTimerRef.current);
+      avisoTimerRef.current = null;
+    }
+    setAviso('');
   }, []);
 
   useEffect(() => () => {
@@ -439,12 +448,7 @@ export default function App() {
             </>
           ) : (
             <Suspense
-              fallback={(
-                <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-creme" role="status" aria-live="polite">
-                  <Fruta nome="tomato" className="tomate-pula w-40 h-40" />
-                  <p className="font-display text-2xl leading-8 font-extrabold text-tinta m-0">Abrindo o mapa...</p>
-                </div>
-              )}
+              fallback={<CarregandoMapa className="flex-1" />}
             >
             <MarketMap
               foco={foco}
@@ -645,7 +649,7 @@ export default function App() {
           </div>
         )}
 
-      {backendAtivo && <Aviso mensagem={aviso} />}
+      {backendAtivo && <Aviso mensagem={aviso} onFechar={fecharAviso} />}
     </div>
   );
 }
