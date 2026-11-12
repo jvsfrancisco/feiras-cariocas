@@ -102,10 +102,12 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261111000100_es
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261111000200_funcoes_e_privs_fases_0_e_1.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261111000300_fase_2_trecho.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261111000400_fase_3_sugestoes.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261112000500_fase_4_fotos.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/01_fases_0_e_1.test.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/02_fase_2.test.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/03_fase_3.test.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/04_fase_4.test.sql
 ```
 
 ---
@@ -141,3 +143,14 @@ Antes de abrir para o público, confira no painel **Organization → Usage**:
 - **Banco de dados:** 500 MB (as 160 feiras, trechos e confirmações de 30 dias ocupam < 5 MB).
 - **Egress:** 5 GB/mês no plano gratuito.
 - **Storage:** 1 GB (só será utilizado na Fase 4 — fotos).
+
+---
+
+## 8. Fotos (fase 4a)
+
+1. Rode a migração `20261112000500_fase_4_fotos.sql` depois das anteriores e execute os quatro arquivos pgTAP. Para a lógica da função, rode `deno test --config supabase/functions/fotos/deno.json --allow-env supabase/functions/fotos/core_test.ts` e `deno check --config supabase/functions/fotos/deno.json supabase/functions/fotos/index.ts`.
+2. Consulte como administrador `SELECT valor FROM private.segredos WHERE chave = 'foto_edge_secret'` e configure o valor como segredo `FOTO_EDGE_SECRET` da Edge Function. Publique com `supabase functions deploy fotos`. A função usa `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `FOTO_EDGE_SECRET`. As chaves privadas ficam só no servidor; o navegador usa apenas a chave pública e o JWT do login anônimo. A RPC `denunciar_foto` recusa chamadas que não venham da Edge Function com esse segredo, embora tenha `EXECUTE` para `authenticated`.
+3. O app chama `/functions/v1/fotos/promover` após subir foto e miniatura na fila, `/functions/v1/fotos/denunciar` para denunciar e `/functions/v1/fotos/remover` para o dono apagar a foto. A função move os dois objetos para `fotos_quarentena` antes de responder à denúncia decisiva. Para decisões administrativas, chame `/functions/v1/fotos/ocultar` ou `/functions/v1/fotos/restaurar` com `Authorization: Bearer <service-role-key>`. A rota `/functions/v1/fotos/assinar`, com a mesma chave, devolve URLs assinadas por 60 s para objetos privados. As RPCs SQL `admin.ocultar_foto` e `admin.restaurar_foto` atualizam o banco, mas não movem objetos; use as rotas para a operação completa.
+4. O bucket `fotos_arquivo` guarda imagens em revisão e arquivadas. Somente `fotos` é público. Os quatro buckets aceitam `image/jpeg` até 300 KB. A função recodifica os dois arquivos antes de gravá-los no destino.
+5. O job SQL `olhafeira-limpeza-diaria` já existente marca para remoção as fotos em revisão e arquivadas com 30 dias. Agende também uma chamada diária `POST https://<project-ref>.supabase.co/functions/v1/fotos/limpar` com `Authorization: Bearer <service-role-key>` e corpo `{}`. Use `pg_cron` + `pg_net` ou um agendador de segredos equivalente; mantenha a chave no Vault do Supabase, nunca no comando visível do cron. A rota apaga os arquivos marcados e confirma cada remoção. Repita a chamada se houver falha parcial.
+6. Teste a publicação e as URLs públicas em um projeto Supabase real: o Docker desta suíte tem só o schema SQL de Storage. Confirme o 404 na origem para foto e miniatura após ocultar, o cache de 24 h, o bloqueio de upsert e as URLs assinadas de admin com validade de 60 s. Essas verificações dependem do serviço Storage e não são demonstradas pelos testes locais.

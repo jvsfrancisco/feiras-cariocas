@@ -469,7 +469,7 @@ SELECT is(
       )
     ORDER BY 1
   ),
-  ARRAY['public.pub_confirmacoes', 'public.pub_feiras', 'public.pub_sugestoes', 'public.pub_trechos'],
+  ARRAY['public.pub_confirmacoes', 'public.pub_feiras', 'public.pub_fotos', 'public.pub_sugestoes', 'public.pub_trechos'],
   'Critério 16.1: anon e authenticated têm SELECT exclusivamente em pub_confirmacoes, pub_feiras e pub_trechos'
 );
 
@@ -533,7 +533,7 @@ SELECT is(
       AND pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')
     ORDER BY 1
   ),
-  ARRAY['public.apagar_meus_dados', 'public.apoiar_sugestao', 'public.confirmar', 'public.denunciar_sugestao', 'public.minhas_sugestoes', 'public.ping', 'public.propor_trecho', 'public.sugerir_feira', 'public.votar_trecho'],
+  ARRAY['public.apagar_meus_dados', 'public.apoiar_sugestao', 'public.confirmar', 'public.denunciar_foto', 'public.denunciar_sugestao', 'public.minhas_sugestoes', 'public.pedir_upload_foto', 'public.ping', 'public.propor_trecho', 'public.sugerir_feira', 'public.votar_trecho'],
   'Critério 16.5: authenticated tem EXECUTE apenas em public.apagar_meus_dados, public.confirmar, public.ping, public.propor_trecho e public.votar_trecho'
 );
 
@@ -556,15 +556,11 @@ SELECT is(
   'Critério 16.6: todas as funções SECURITY DEFINER possuem SET search_path = '''''
 );
 
--- 25. storage.buckets não tem nenhum bucket público ou exposto nas fases 0 e 1
+-- 25. Apenas fotos é público no Storage.
 SELECT is(
-  (
-    SELECT pg_catalog.count(*)::integer
-    FROM storage.buckets b
-    WHERE COALESCE((pg_catalog.to_jsonb(b) ->> 'public')::boolean, true) = true
-  ),
-  0,
-  'Critério 16.7: storage.buckets não expõe nenhum bucket público nas fases 0 e 1'
+  ARRAY(SELECT b.id FROM storage.buckets b WHERE b.public = true ORDER BY b.id),
+  ARRAY['fotos'],
+  'Critério 16.7: storage.buckets expõe exatamente o bucket fotos'
 );
 
 -- 26. Job olhafeira-limpeza-diaria está agendado em cron.job para limpeza de 30 dias

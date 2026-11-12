@@ -59,3 +59,5 @@ export {
   proporTrecho,
   votarTrecho,
 } from './trechos.js';
+
+export { pedirUpload, enviarFoto, denunciarFoto, apagarFoto, lerFotos } from './fotos.js';
