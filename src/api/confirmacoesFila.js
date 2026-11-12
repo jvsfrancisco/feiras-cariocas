@@ -1,5 +1,5 @@
 // Fila offline de confirmações com client_uuid e janela de 15 min de client_ts (seções 4, 7.1 e critério 10).
-import { backendAtivo, chamarRpc, CODIGO_PRIVACIDADE_PENDENTE, privacidadeAceita } from './client.js';
+import { backendAtivo, chamarRpc, CODIGO_CAPTCHA, CODIGO_PRIVACIDADE_PENDENTE, privacidadeAceita } from './client.js';
 
 export const CHAVE_FILA_CONFIRMACOES = 'olhafeira_fila_confirmacoes';
 export const JANELA_CLIENT_TS_MS = 15 * 60 * 1000;
@@ -70,8 +70,9 @@ export async function sincronizarFilaConfirmacoes({ captchaToken } = {}) {
     const restantes = [];
     let enviados = 0;
     let ultimoResultado = null;
+    let captcha = false;
 
-    for (const item of filaOriginal) {
+    for (const [indice, item] of filaOriginal.entries()) {
       if (!item || !item.client_uuid || !dentroDaJanela15Min(item.client_ts, agoraMs)) {
         // Fora da janela de 15 min: descartada (seção 4 e critério 10)
         continue;
@@ -91,6 +92,12 @@ export async function sincronizarFilaConfirmacoes({ captchaToken } = {}) {
           },
           { autenticado: true, captchaToken },
         );
+        if (res?.codigo === CODIGO_CAPTCHA) {
+          // Captcha recusado: para aqui e guarda esta e as próximas para tentar depois
+          restantes.push(...filaOriginal.slice(indice));
+          captcha = true;
+          break;
+        }
         ultimoResultado = res;
         enviados += 1;
       } catch {
@@ -100,7 +107,7 @@ export async function sincronizarFilaConfirmacoes({ captchaToken } = {}) {
     }
 
     salvarFilaConfirmacoes(restantes);
-    return { enviados, pendentes: restantes.length, ultimoResultado };
+    return { enviados, pendentes: restantes.length, ultimoResultado, captcha };
   } finally {
     sincronizando = false;
   }
@@ -138,7 +145,12 @@ export async function enviarConfirmacao({
     return { codigo: 'ok', enfileirada: true };
   }
 
-  const { pendentes, ultimoResultado } = await sincronizarFilaConfirmacoes({ captchaToken });
+  const { pendentes, ultimoResultado, captcha } = await sincronizarFilaConfirmacoes({ captchaToken });
+  if (captcha) {
+    // Não enfileira por falha de captcha: tira a recém-criada da fila
+    salvarFilaConfirmacoes(lerFilaConfirmacoes().filter((f) => f?.client_uuid !== item.client_uuid));
+    return { codigo: CODIGO_CAPTCHA };
+  }
   const aindaNaFila = lerFilaConfirmacoes().some((f) => f?.client_uuid === item.client_uuid);
   if (aindaNaFila || (pendentes > 0 && !ultimoResultado)) {
     return { codigo: 'ok', enfileirada: true };

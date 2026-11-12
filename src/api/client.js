@@ -12,6 +12,14 @@ export const backendAtivo = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 export const CHAVE_SESSAO = 'olhafeira_sessao_supabase';
 export const CHAVE_PRIVACIDADE = 'olhafeira_privacidade_aceita';
 export const CODIGO_PRIVACIDADE_PENDENTE = 'privacidade_pendente';
+export const CODIGO_CAPTCHA = 'captcha';
+
+// Captcha sem token ou recusado pelo login anônimo: não é falta de rede, não vai para a fila
+export class ErroCaptcha extends Error {}
+
+export function resultadoDeErro(erro) {
+  return erro instanceof ErroCaptcha ? { codigo: CODIGO_CAPTCHA } : null;
+}
 
 // Textos para os 11 códigos fixos da seção 4
 export const MENSAGENS_CODIGO = {
@@ -27,6 +35,7 @@ export const MENSAGENS_CODIGO = {
   texto_proibido: 'O texto contém termos não permitidos.',
   encerrada: 'Esta votação já foi encerrada.',
   sem_conexao: 'Sem conexão. Tente de novo quando a internet voltar.',
+  captcha: 'Não deu para confirmar que você é uma pessoa. Confira a internet e tente de novo.',
 };
 
 export const MENSAGENS_POR_ACAO = {
@@ -230,6 +239,9 @@ export async function obterTokenTurnstile() {
 export async function entrarAnonimo(captchaToken) {
   if (!backendAtivo) return null;
   const tokenCaptcha = captchaToken ?? (await obterTokenTurnstile());
+  if (TURNSTILE_SITE_KEY && tokenCaptcha === undefined) {
+    throw new ErroCaptcha('Falha ao obter token do captcha');
+  }
   const corpo = {
     data: {},
     ...(tokenCaptcha ? { gotrue_meta_security: { captcha_token: tokenCaptcha } } : {}),
@@ -246,6 +258,9 @@ export async function entrarAnonimo(captchaToken) {
   });
 
   if (!res.ok) {
+    if ([400, 401, 403, 422].includes(res.status)) {
+      throw new ErroCaptcha(`Falha no login anônimo (${res.status})`);
+    }
     throw new Error(`Falha no login anônimo (${res.status})`);
   }
 
@@ -339,7 +354,15 @@ export async function chamarRpc(
 
   let bearer = SUPABASE_ANON_KEY;
   if (autenticado) {
-    const sessao = await garantirSessao(captchaToken);
+    let sessao;
+    try {
+      sessao = await garantirSessao(captchaToken);
+    } catch (erro) {
+      // Captcha recusado vira código próprio; erro de rede segue como exceção
+      const resultado = resultadoDeErro(erro);
+      if (resultado) return resultado;
+      throw erro;
+    }
     if (!sessao?.access_token) {
       return { codigo: 'invalido' };
     }

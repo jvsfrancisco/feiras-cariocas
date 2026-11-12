@@ -194,9 +194,10 @@ export default function App() {
     if (!backendAtivo) return undefined;
     const sincronizar = () => {
       sincronizarFilaConfirmacoes()
-        .then(({ enviados, ultimoResultado }) => {
+        .then(({ enviados, ultimoResultado, captcha }) => {
           if (enviados > 0) {
-            if (ultimoResultado?.codigo && ultimoResultado.codigo !== 'ok') {
+            // Falha de captcha em segundo plano não vira aviso: a pessoa não fez nada agora
+            if (ultimoResultado?.codigo && ultimoResultado.codigo !== 'ok' && !captcha) {
               mostrarAviso(mensagemParaCodigo(ultimoResultado.codigo));
             } else {
               recarregarPublicos();
@@ -228,6 +229,16 @@ export default function App() {
       })
         .then((res) => {
           if (res?.codigo === 'privacidade_pendente') {
+            return;
+          }
+          if (res?.codigo === 'captcha') {
+            // Não chegou ao servidor: desfaz a marcação local para a pergunta voltar
+            setConfirmacoes((anteriores) => {
+              const semEsta = anteriores.filter((item) => item !== entrada);
+              salvarConfirmacoes(semEsta);
+              return semEsta;
+            });
+            mostrarAviso(mensagemParaCodigo('captcha'));
             return;
           }
           if (res?.enfileirada) {

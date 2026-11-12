@@ -1,5 +1,5 @@
 import {
-  backendAtivo, chamarRpc, garantirSessao, lerTabelaPublica, privacidadeAceita,
+  backendAtivo, chamarRpc, garantirSessao, lerTabelaPublica, privacidadeAceita, resultadoDeErro,
   CODIGO_PRIVACIDADE_PENDENTE, SUPABASE_ANON_KEY, SUPABASE_URL,
 } from './client.js';
 import { gerarUuid } from './confirmacoesFila.js';
@@ -27,7 +27,7 @@ export async function pedirUpload({ feiraId, feira_id, lat, lng, acuracia, captc
       feira_id: feiraId ?? feira_id, lat, lng, acuracia,
       client_uuid: gerarUuid(), client_ts: new Date().toISOString(),
     }, { autenticado: true, captchaToken });
-  } catch { return offline; }
+  } catch (e) { return resultadoDeErro(e) ?? offline; }
 }
 
 async function subir(caminho, blob, token) {
@@ -51,7 +51,7 @@ export async function enviarFoto({ fotoId, foto_id, caminho, caminhoMini, caminh
     if (!await subir(caminho, foto, sessao.access_token)) return { codigo: 'invalido' };
     if (!await subir(caminhoMini ?? caminho_mini, miniatura, sessao.access_token)) return { codigo: 'invalido' };
     return await chamarFuncao('promover', { foto_id: fotoId ?? foto_id }, captchaToken);
-  } catch { return offline; }
+  } catch (e) { return resultadoDeErro(e) ?? offline; }
 }
 
 export async function denunciarFoto({ fotoId, foto_id, captchaToken } = {}) {
@@ -61,14 +61,14 @@ export async function denunciarFoto({ fotoId, foto_id, captchaToken } = {}) {
     return await chamarFuncao('denunciar', {
       foto_id: fotoId ?? foto_id, client_uuid: gerarUuid(), client_ts: new Date().toISOString(),
     }, captchaToken);
-  } catch { return offline; }
+  } catch (e) { return resultadoDeErro(e) ?? offline; }
 }
 
 export async function apagarFoto({ fotoId, foto_id, captchaToken } = {}) {
   if (!backendAtivo) return { codigo: 'invalido', localOnly: true };
   if (acesso()) return acesso();
   try { return await chamarFuncao('remover', { foto_id: fotoId ?? foto_id }, captchaToken); }
-  catch { return offline; }
+  catch (e) { return resultadoDeErro(e) ?? offline; }
 }
 
 export async function lerFotos(feiraId) {
