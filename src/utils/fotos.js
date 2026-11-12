@@ -15,13 +15,14 @@ function abrirBanco() {
     }
     let req;
     try {
-      req = indexedDB.open(BANCO, 1);
+      req = indexedDB.open(BANCO, 2);
     } catch (e) {
       reject(e);
       return;
     }
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(LOJA)) req.result.createObjectStore(LOJA);
+      if (!req.result.objectStoreNames.contains('fotosEnviadas')) req.result.createObjectStore('fotosEnviadas');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error('Falha ao abrir o banco'));

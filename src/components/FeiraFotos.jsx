@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, Trash2, TriangleAlert } from 'lucide-react';
 import Fruta from './Frutas';
 import { MAX_FOTOS, adicionarFoto, listarFotos, removerFoto } from '../utils/fotos';
+import { backendAtivo } from '../api';
+import FeiraFotosServidor from './FeiraFotosServidor';
 
 const MSG_LEITURA =
   'Não foi possível abrir as fotos deste aparelho. Isso pode acontecer em aba anônima ou com o armazenamento bloqueado. O resto do cartão continua funcionando.';
@@ -18,7 +20,12 @@ function formatarData(iso) {
 }
 
 // Fotos desta feira, guardadas só neste aparelho (IndexedDB). Sem servidor.
-export default function FeiraFotos({ feiraId, bairro }) {
+export default function FeiraFotos(props) {
+  if (backendAtivo) return <FeiraFotosServidor {...props} />;
+  return <FeiraFotosLocal {...props} />;
+}
+
+function FeiraFotosLocal({ feiraId, bairro }) {
   // fotos: lista de { id, url, data }; estado: 'carregando' | 'pronto' | 'indisponivel'
   const [fotos, setFotos] = useState([]);
   const [estado, setEstado] = useState('carregando');

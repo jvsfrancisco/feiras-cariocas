@@ -34,6 +34,7 @@ export function adaptarFeiraPublica(f, trechosPorFeira = {}) {
     hours,
     ra: f.ra ?? '',
     coord_precisa: Boolean(f.coord_precisa),
+      status: f.status,
     origem: f.origem ?? 'prefeitura',
   };
 

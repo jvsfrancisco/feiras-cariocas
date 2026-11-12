@@ -68,6 +68,21 @@ export const MENSAGENS_POR_ACAO = {
     ok: 'Voto registrado. Obrigado!',
     invalido: 'Não foi possível registrar o voto.',
   },
+  foto: {
+    ok: 'Foto publicada.',
+    limite: 'Esta feira já recebeu as fotos de hoje, ou você chegou ao seu limite. Tente amanhã.',
+    fora_do_raio: 'Você precisa estar na feira com GPS preciso para mandar foto.',
+    fora_do_horario: 'Dá para mandar foto estando na feira, no horário dela.',
+    sem_coord_precisa: 'Esta feira ainda não tem localização precisa para fotos.',
+  },
+  denunciar_foto: {
+    ok: 'Denúncia registrada. Esta foto foi escondida neste aparelho.',
+    aparelho_novo: 'Este aparelho precisa ter pelo menos 24 horas para denunciar.',
+    limite: 'Você atingiu o limite de denúncias de hoje.',
+  },
+  apagar_foto: {
+    ok: 'Foto apagada.',
+  },
 };
 
 export function mensagemParaCodigo(codigo, acao) {

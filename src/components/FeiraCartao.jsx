@@ -454,7 +454,7 @@ function FeiraCartaoComum({
           </div>
         ) : (
           <div role="tabpanel" id={idPainel('fotos')} aria-labelledby={idAba('fotos')} className="tab-panel">
-            <FeiraFotos feiraId={market.id} bairro={market.bairro} cor={cor} />
+            <FeiraFotos key={backendAtivo ? market.id : undefined} feiraId={market.id} bairro={market.bairro} cor={cor} market={market} userLat={userLat} userLon={userLon} userAccuracy={userAccuracy} onPedirLocal={onPedirLocal} />
           </div>
         )}
       </div>

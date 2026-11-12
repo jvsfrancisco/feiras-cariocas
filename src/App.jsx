@@ -21,6 +21,7 @@ import {
 } from './api';
 import { calculateDistance, sortMarketsByDistance } from './utils/distance';
 import { appendCoordinates } from './utils/geocoding';
+import { limparFotosEnviadas } from './utils/fotosServidor';
 import {
   carregarConfirmacoes,
   diasDesde,
@@ -80,7 +81,8 @@ export default function App() {
         accuracy: position.coords.accuracy,
       };
       setUserLocation((anterior) => {
-        if (anterior && calculateDistance(anterior.lat, anterior.lng, novo.lat, novo.lng) < DESLOCAMENTO_MINIMO_KM) {
+        if (anterior && calculateDistance(anterior.lat, anterior.lng, novo.lat, novo.lng) < DESLOCAMENTO_MINIMO_KM
+          && (!backendAtivo || novo.accuracy >= anterior.accuracy)) {
           return anterior;
         }
         return novo;
@@ -212,8 +214,9 @@ export default function App() {
 
   const lidarApagarMeusDados = useCallback(() => {
     apagarMeusDados()
-      .then((res) => {
+      .then(async (res) => {
         if (res?.codigo !== 'ok') return;
+        await limparFotosEnviadas();
         setConfirmacoes([]);
         recarregarPublicos();
       })
