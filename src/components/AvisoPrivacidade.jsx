@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 export default function AvisoPrivacidade({
   temPendente = false,
   acao = 'confirmação',
@@ -7,10 +9,44 @@ export default function AvisoPrivacidade({
   mostrarAlca = true,
   dentroDeDialogo = false,
   className = '',
+  modoConsulta = false,
+  tituloRef,
 }) {
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const apagarRef = useRef(null);
+  const confirmarRef = useRef(null);
+  const fecharRef = useRef(null);
+  const confirmouRef = useRef(false);
+
+  useEffect(() => {
+    if (!modoConsulta) return;
+    if (confirmandoExclusao) {
+      confirmouRef.current = true;
+      confirmarRef.current?.focus();
+    } else if (confirmouRef.current) {
+      apagarRef.current?.focus();
+    }
+  }, [confirmandoExclusao, modoConsulta]);
+
+  useEffect(() => {
+    if (excluindo) fecharRef.current?.focus();
+  }, [excluindo]);
+
+  const confirmarExclusao = async () => {
+    setExcluindo(true);
+    try {
+      await onApagarDados();
+      setConfirmandoExclusao(false);
+    } finally {
+      setExcluindo(false);
+    }
+  };
+
   return (
     <div
       role={dentroDeDialogo ? undefined : 'dialog'}
+      aria-modal={modoConsulta ? 'true' : undefined}
       aria-labelledby={dentroDeDialogo ? undefined : 'privacy-title'}
       aria-describedby={dentroDeDialogo ? undefined : 'privacy-desc'}
       className={`confirm-sheet pointer-events-auto w-full max-w-md bg-papel rounded-t-[28px] pt-4 px-4 pb-6 flex flex-col animate-fade-in motion-reduce:animate-none ${className}`.trim()}
@@ -23,10 +59,11 @@ export default function AvisoPrivacidade({
       </p>
       <h2
         id="privacy-title"
+        ref={tituloRef}
         tabIndex={-1}
         className="font-display text-[24px] leading-[1.08] font-extrabold tracking-[-0.04em] text-tinta mt-1 mb-2"
       >
-        Antes de compartilhar {acao === 'foto' ? 'sua foto' : acao === 'voto' ? 'seu voto' : acao === 'proposta' ? 'sua proposta' : acao === 'sugestão' ? 'sua sugestão' : acao === 'apoio' ? 'seu apoio' : acao === 'denúncia' ? 'sua denúncia' : 'sua confirmação'}
+        {modoConsulta ? 'Privacidade e dados' : <>Antes de compartilhar {acao === 'foto' ? 'sua foto' : acao === 'voto' ? 'seu voto' : acao === 'proposta' ? 'sua proposta' : acao === 'sugestão' ? 'sua sugestão' : acao === 'apoio' ? 'seu apoio' : acao === 'denúncia' ? 'sua denúncia' : 'sua confirmação'}</>}
       </h2>
       <div id="privacy-desc" className="text-[12px] leading-[1.5] text-tinta-2 space-y-2 mb-4">
         <p className="m-0">
@@ -61,30 +98,61 @@ export default function AvisoPrivacidade({
         {acao === 'foto' && <p className="m-0">Evite rostos e placas de carro. A foto fica pública.</p>}
       </div>
 
-      <button
-        type="button"
-        onClick={onConfirmar}
-        className="confirm-choice confirm-yes w-full h-12 min-h-12 mb-2 px-4 rounded-full font-extrabold text-sm text-papel bg-tomate hover:bg-tomate/90 transition-colors focus-visible:ring-2 focus-visible:ring-verde outline-none"
-      >
-        {temPendente ? (acao === 'foto' ? 'Concordar e escolher foto' : acao === 'voto' || acao === 'proposta' || acao === 'sugestão' || acao === 'apoio' || acao === 'denúncia' ? 'Concordar e enviar' : 'Concordar e enviar resposta') : 'Entendi e concordo'}
-      </button>
-
-      {onApagarDados && (
+      {!modoConsulta && (
         <button
           type="button"
-          onClick={onApagarDados}
+          onClick={onConfirmar}
+          className="confirm-choice confirm-yes w-full h-12 min-h-12 mb-2 px-4 rounded-full font-extrabold text-sm text-papel bg-tomate hover:bg-tomate/90 transition-colors focus-visible:ring-2 focus-visible:ring-verde outline-none"
+        >
+          {temPendente ? (acao === 'foto' ? 'Concordar e escolher foto' : acao === 'voto' || acao === 'proposta' || acao === 'sugestão' || acao === 'apoio' || acao === 'denúncia' ? 'Concordar e enviar' : 'Concordar e enviar resposta') : 'Entendi e concordo'}
+        </button>
+      )}
+
+      {modoConsulta && confirmandoExclusao && (
+        <p className="mb-2 text-center text-xs font-bold text-tinta" role="status">
+          Apagar seus dados enviados deste aparelho e do servidor?
+        </p>
+      )}
+      {onApagarDados && (!modoConsulta || !confirmandoExclusao) && (
+        <button
+          ref={apagarRef}
+          type="button"
+          onClick={modoConsulta ? () => setConfirmandoExclusao(true) : onApagarDados}
           className="confirm-choice w-full h-12 min-h-12 mb-2 px-4 rounded-full font-extrabold text-xs text-verde-escuro bg-papel border border-linha hover:bg-creme transition-colors focus-visible:ring-2 focus-visible:ring-verde outline-none"
         >
           Apagar meus dados enviados
         </button>
       )}
 
+      {modoConsulta && confirmandoExclusao && (
+        <>
+          <button
+            ref={confirmarRef}
+            type="button"
+            onClick={confirmarExclusao}
+            disabled={excluindo}
+            className="confirm-choice w-full h-12 min-h-12 mb-2 px-4 rounded-full font-extrabold text-xs text-papel bg-tomate hover:bg-tomate/90 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-verde outline-none"
+          >
+            {excluindo ? 'Apagando dados…' : 'Confirmar exclusão'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmandoExclusao(false)}
+            disabled={excluindo}
+            className="confirm-choice w-full h-12 min-h-12 mb-2 px-4 rounded-full font-extrabold text-xs text-verde-escuro bg-papel border border-linha hover:bg-creme disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-verde outline-none"
+          >
+            Cancelar exclusão
+          </button>
+        </>
+      )}
+
       <button
+        ref={fecharRef}
         type="button"
         onClick={onCancelar}
         className="confirm-choice confirm-later w-full h-12 min-h-12 mt-2 px-4 rounded-full text-xs font-extrabold text-tinta-2 hover:text-tinta focus-visible:ring-2 focus-visible:ring-verde outline-none"
       >
-        Cancelar
+        {modoConsulta ? 'Fechar' : 'Cancelar'}
       </button>
     </div>
   );

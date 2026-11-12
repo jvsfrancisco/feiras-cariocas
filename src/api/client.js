@@ -207,7 +207,9 @@ export async function obterTokenTurnstile() {
     try {
       const widgetId = window.turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
-        size: 'invisible',
+        // O modo invisível é escolhido no painel da Cloudflare ("Widget Mode: Invisible").
+        // `size` só aceita normal, flexible ou compact; "invisible" aqui quebra o render.
+        language: 'pt-br',
         callback: (token) => {
           window.clearTimeout(timer);
           concluir(token, widgetId);

@@ -10,6 +10,7 @@ import { acontecendoAgora } from './utils/diaCor';
 import { regiaoDaFeira } from './utils/regiao';
 import AddMarketModal from './components/AddMarketModal';
 import Aviso from './components/Aviso';
+import AvisoPrivacidade from './components/AvisoPrivacidade';
 import ConfirmPrompt from './components/ConfirmPrompt';
 import { useMarkets } from './hooks/useMarkets';
 import {
@@ -45,6 +46,10 @@ export default function App() {
   const [viewMode, setViewMode] = useState('list');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const fecharModal = useCallback(() => setIsAddModalOpen(false), []);
+  const [privacidadeAberta, setPrivacidadeAberta] = useState(false);
+  const linkPrivacidadeRef = useRef(null);
+  const tituloPrivacidadeRef = useRef(null);
+  const dialogPrivacidadeRef = useRef(null);
   // Feira aberta na folha sobre a lista e pedido de foco para o mapa (vindo da folha).
   const [abertaId, setAbertaId] = useState(null);
   const [foco, setFoco] = useState(null);
@@ -54,6 +59,35 @@ export default function App() {
   const [pedirLocal, setPedirLocal] = useState(false);
   const [erroLocal, setErroLocal] = useState('');
   const temGeo = typeof navigator !== 'undefined' && 'geolocation' in navigator;
+
+  useEffect(() => {
+    if (!privacidadeAberta) return undefined;
+    const link = linkPrivacidadeRef.current;
+    tituloPrivacidadeRef.current?.focus();
+    const aoTeclar = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setPrivacidadeAberta(false);
+      }
+      if (e.key !== 'Tab') return;
+      const itens = dialogPrivacidadeRef.current?.querySelectorAll('button:not([disabled]), a[href]');
+      if (!itens?.length) return;
+      const primeiro = itens[0];
+      const ultimo = itens[itens.length - 1];
+      if (e.shiftKey && (document.activeElement === tituloPrivacidadeRef.current || document.activeElement === primeiro)) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => {
+      document.removeEventListener('keydown', aoTeclar);
+      link?.focus();
+    };
+  }, [privacidadeAberta]);
   const isLocationPending = pedirLocal && !userLocation;
 
   const solicitarLocalizacao = useCallback(() => {
@@ -213,14 +247,15 @@ export default function App() {
   };
 
   const lidarApagarMeusDados = useCallback(() => {
-    apagarMeusDados()
+    return apagarMeusDados()
       .then(async (res) => {
-        if (res?.codigo !== 'ok') return;
+        if (res?.codigo !== 'ok') return false;
         await limparFotosEnviadas();
         setConfirmacoes([]);
         recarregarPublicos();
+        return true;
       })
-      .catch(() => {});
+      .catch(() => false);
   }, [recarregarPublicos]);
 
   const dispensarConfirmacao = () => {
@@ -487,7 +522,25 @@ export default function App() {
               <MarcaTomate size={32} />
               <span>Olha a Feira</span>
             </a>
-            <p className="footer-data">Dados da Prefeitura do Rio · olhafeira.tech</p>
+            <p className="footer-data">
+              Dados da Prefeitura do Rio · olhafeira.tech
+              {backendAtivo && (
+                <>
+                  {' · '}
+                  <a
+                    ref={linkPrivacidadeRef}
+                    href="#privacidade-e-dados"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPrivacidadeAberta(true);
+                    }}
+                    className="text-papel underline underline-offset-4 hover:text-areia focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-papel"
+                  >
+                    Privacidade e dados
+                  </a>
+                </>
+              )}
+            </p>
             <p className="footer-credit">
               <span>Feito por</span>
               <a
@@ -562,6 +615,24 @@ export default function App() {
           onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
         />
       )}
+
+        {backendAtivo && privacidadeAberta && (
+          <div id="privacidade-e-dados" ref={dialogPrivacidadeRef} className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center">
+            <div className="absolute inset-0 bg-tinta/30" aria-hidden="true" />
+            <AvisoPrivacidade
+              modoConsulta
+              tituloRef={tituloPrivacidadeRef}
+              onCancelar={() => setPrivacidadeAberta(false)}
+              onApagarDados={async () => {
+                const apagou = await lidarApagarMeusDados();
+                mostrarAviso(apagou
+                  ? 'Seus dados foram apagados deste aparelho e do servidor.'
+                  : 'Sem conexão. Tente de novo quando a internet voltar.');
+              }}
+              className="relative max-h-[90dvh] overflow-y-auto sm:rounded-[28px] shadow-[0_-8px_30px_rgba(59,42,32,0.15)]"
+            />
+          </div>
+        )}
 
       {backendAtivo && <Aviso mensagem={aviso} />}
     </div>
