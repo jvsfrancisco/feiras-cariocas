@@ -15,10 +15,10 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/app",
   "display": "standalone",
-  "theme_color": "#f97316",
-  "background_color": "#FEFAE0",
-  "description": "Encontre feiras livres no Rio de Janeiro perto de você.",
+  "theme_color": "#5B7A3A",
+  "background_color": "#FFF8EC",
+  "description": "Encontre feiras livres no Rio de Janeiro perto de você. olhafeira.tech",
   "orientation": "portrait"
 }

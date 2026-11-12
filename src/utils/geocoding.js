@@ -97,8 +97,31 @@ const BAIRRO_COORDS = {
   "Maré": { lat: -22.8614, lng: -43.2425 },
 };
 
+export function centroDoTrecho(trecho) {
+  if (!Array.isArray(trecho) || trecho.length === 0) return null;
+  const validos = trecho.filter(
+    (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]),
+  );
+  if (validos.length === 0) return null;
+  const somaLat = validos.reduce((acc, [lat]) => acc + lat, 0);
+  const somaLng = validos.reduce((acc, [, lng]) => acc + lng, 0);
+  return {
+    lat: Number((somaLat / validos.length).toFixed(6)),
+    lng: Number((somaLng / validos.length).toFixed(6)),
+  };
+}
+
 export function appendCoordinates(markets) {
   return markets.map(market => {
+    const centro = centroDoTrecho(market.trecho);
+    if (centro) {
+      return {
+        ...market,
+        lat: centro.lat,
+        lng: centro.lng,
+      };
+    }
+
     if (market.lat && market.lng) return market; // Already has coords
 
     const coords = BAIRRO_COORDS[market.bairro];

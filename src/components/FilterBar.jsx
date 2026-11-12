@@ -1,105 +1,89 @@
-import { Map, List } from 'lucide-react';
+import { nomeDoDia } from '../utils/confirmacoes';
+import { DIAS_COM_COR, diaCor } from '../utils/diaCor';
+import { LocateFixed } from 'lucide-react';
 
-const DAYS = ['Todos', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado', 'Domingo'];
-
-const DAY_COLORS_CLASSES = {
-  'Todos': 'bg-gray-100 text-gray-700 hover:bg-gray-200',
-  'Segunda-Feira': 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-  'Terça-Feira': 'bg-orange-100 text-orange-700 hover:bg-orange-200',
-  'Quarta-Feira': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-  'Quinta-Feira': 'bg-green-100 text-green-700 hover:bg-green-200',
-  'Sexta-Feira': 'bg-blue-100 text-blue-700 hover:bg-blue-200',
-  'Sábado': 'bg-purple-100 text-purple-700 hover:bg-purple-200',
-  'Domingo': 'bg-red-100 text-red-700 hover:bg-red-200',
+const ROTULOS = {
+  'Segunda-Feira': 'Seg',
+  'Terça-Feira': 'Ter',
+  'Quarta-Feira': 'Qua',
+  'Quinta-Feira': 'Qui',
+  'Sexta-Feira': 'Sex',
+  'Sábado': 'Sáb',
+  'Domingo': 'Dom',
 };
 
-const DAY_ACTIVE_CLASSES = {
-  'Todos': 'bg-gray-800 text-white shadow-md',
-  'Segunda-Feira': 'bg-slate-700 text-white shadow-md',
-  'Terça-Feira': 'bg-orange-600 text-white shadow-md',
-  'Quarta-Feira': 'bg-yellow-500 text-orange-950 shadow-md',
-  'Quinta-Feira': 'bg-green-600 text-white shadow-md',
-  'Sexta-Feira': 'bg-blue-600 text-white shadow-md',
-  'Sábado': 'bg-purple-600 text-white shadow-md',
-  'Domingo': 'bg-red-600 text-white shadow-md',
-};
+function opcoes(hoje) {
+  const indice = DIAS_COM_COR.indexOf(hoje);
+  // Depois de "Hoje" e "Todos", os outros dias seguem a ordem a partir de amanhã.
+  const seguintes = [...DIAS_COM_COR.slice(indice + 1), ...DIAS_COM_COR.slice(0, indice)];
+  return [
+    { valor: hoje, rotulo: `Hoje · ${ROTULOS[hoje]}`, aria: `Hoje, ${hoje}` },
+    { valor: 'Todos', rotulo: 'Todos', aria: 'Todos os dias' },
+    ...seguintes.map((d) => ({ valor: d, rotulo: ROTULOS[d], aria: d })),
+  ];
+}
 
-export default function FilterBar({ selectedDay, setSelectedDay, viewMode, setViewMode }) {
+// Chips de dia com rolagem horizontal. "Perto de mim" é o primeiro item quando ainda não há
+// localização; depois vem o chip selecionado e os demais. Máscara de 32 px na borda direita.
+export default function FilterBar({
+  selectedDay,
+  setSelectedDay,
+  className = '',
+  onNear,
+  noMapa = false,
+  agora = new Date(),
+}) {
+  const hoje = nomeDoDia(agora);
+  const todas = opcoes(hoje);
+  const selecionada = todas.find((opcao) => opcao.valor === selectedDay);
+  const ordenadas = selecionada ? [selecionada, ...todas.filter((opcao) => opcao !== selecionada)] : todas;
+
   return (
-    <nav className="bg-white/90 backdrop-blur-md border-b border-orange-100 relative z-40 shadow-sm" aria-label="Filtros e Visualização">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
-        
-        {/* Days Scrollable Row with Fade Mask */}
-        <div 
-          className="relative w-full sm:w-auto group"
-          onTouchStart={(e) => e.stopPropagation()}
-        >
-          <div 
-            className="flex overflow-x-auto no-scrollbar gap-2 py-2 px-2 scroll-smooth touch-pan-x" 
-            role="tablist" 
-            aria-label="Filtrar por dia da semana"
-          >
-            <div className="w-2 shrink-0" />
-            {DAYS.map(day => {
-              const isActive = selectedDay === day;
-              const baseClass = isActive ? DAY_ACTIVE_CLASSES[day] : DAY_COLORS_CLASSES[day];
-              
-              return (
-                <button
-                  key={day}
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-label={isActive ? `${day}, filtro selecionado` : `Filtrar por ${day}`}
-                  onClick={() => setSelectedDay(day)}
-                  className={`whitespace-nowrap px-[1.25rem] py-[0.625rem] rounded-full text-sm font-bold transition-all border-2 ${isActive ? `${baseClass} border-transparent scale-105 shadow-md z-10` : `border-transparent ${baseClass} opacity-80 hover:opacity-100`} focus-visible:ring-2 focus-visible:ring-orange-500 outline-none`}
-                >
-                  {day}
-                  {isActive && <span className="sr-only"> (Selecionado)</span>}
-                </button>
-              );
-            })}
-            <div className="w-2 shrink-0" />
-          </div>
-          
-          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white/90 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white/90 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-
-        {/* View Toggle */}
-        <div 
-          className="flex bg-gray-100/80 p-[0.25rem] rounded-xl shrink-0 border border-gray-200" 
-          role="tablist" 
-          aria-label="Alternar modo de exibição"
-          onTouchStart={(e) => e.stopPropagation()}
-        >
+    <nav aria-label="Filtrar por dia da semana" className={`w-full max-w-7xl mx-auto ${className}`}>
+      <div
+        className="flex gap-2 overflow-x-auto no-scrollbar touch-pan-x px-4 [-webkit-mask-image:linear-gradient(to_right,#3B2A20_0,#3B2A20_calc(100%-32px),transparent_100%)] [mask-image:linear-gradient(to_right,#3B2A20_0,#3B2A20_calc(100%-32px),transparent_100%)]"
+        onTouchStart={(e) => e.stopPropagation()}
+      >
+        {onNear && (
           <button
-            role="tab"
-            aria-selected={viewMode === 'list'}
-            aria-label="Ver feiras em formato de lista"
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-[1rem] py-[0.5rem] rounded-lg text-sm font-black transition-all focus-visible:ring-2 focus-visible:ring-orange-500 outline-none ${
-              viewMode === 'list' ? 'bg-white shadow-md text-orange-700' : 'text-gray-700 hover:text-orange-700'
-            }`}
+            type="button"
+            onClick={onNear}
+            className="near-btn shrink-0 whitespace-nowrap h-12 min-h-12 px-4 rounded-full bg-verde text-papel border-2 border-verde font-extrabold text-sm inline-flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-verde"
           >
-            <List size={18} aria-hidden="true" /> 
-            <span>Lista</span>
-            {viewMode === 'list' && <span className="sr-only"> (Ativo)</span>}
+            <LocateFixed size={20} aria-hidden="true" />
+            Perto de mim
           </button>
-          <button
-            role="tab"
-            aria-selected={viewMode === 'map'}
-            aria-label="Ver feiras no mapa interativo"
-            onClick={() => setViewMode('map')}
-            className={`flex items-center gap-2 px-[1rem] py-[0.5rem] rounded-lg text-sm font-black transition-all focus-visible:ring-2 focus-visible:ring-orange-500 outline-none ${
-              viewMode === 'map' ? 'bg-white shadow-md text-orange-700' : 'text-gray-700 hover:text-orange-700'
-            }`}
-          >
-            <Map size={18} aria-hidden="true" /> 
-            <span>Mapa</span>
-            {viewMode === 'map' && <span className="sr-only"> (Ativo)</span>}
-          </button>
-        </div>
-
+        )}
+        {ordenadas.map(({ valor, rotulo, aria }) => {
+          const ativo = selectedDay === valor;
+          const cor = valor === 'Todos' ? null : diaCor(valor);
+          const fundo = cor ? cor.acao : '#5B7A3A';
+          const textoAtivo = cor ? (cor.sobreAcao ?? cor.sobreForte) : '#FFFDF8';
+          return (
+            <button
+              key={valor}
+              type="button"
+              aria-pressed={ativo}
+              aria-label={ativo ? `${aria}, filtro selecionado` : `Filtrar por ${aria}`}
+              onClick={() => setSelectedDay(valor)}
+              className={`chip shrink-0 whitespace-nowrap h-12 min-h-12 px-4 rounded-full font-extrabold border-2 inline-flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-verde focus-visible:ring-offset-2 outline-none ${
+                noMapa ? 'text-xs shadow-[0_1px_3px_rgba(74,49,29,0.08)]' : 'text-[13px]'
+              } ${ativo ? '' : 'bg-papel text-tinta'}`}
+              style={ativo
+                ? { backgroundColor: fundo, borderColor: fundo, color: textoAtivo }
+                : { borderColor: '#E6D8C5' }}
+            >
+              <span
+                aria-hidden="true"
+                className="chip-dot w-3.5 h-3.5 rounded-full shrink-0"
+                style={{
+                  background: ativo ? textoAtivo : (cor ? cor.forte : '#5B7A3A'),
+                }}
+              />
+              {rotulo}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

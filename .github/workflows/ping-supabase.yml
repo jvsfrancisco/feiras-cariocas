@@ -1,0 +1,30 @@
+name: Ping Supabase (evitar pausa por inatividade)
+
+on:
+  schedule:
+    # A cada 3 dias às 09:17 UTC (seção 9 de docs/backend/REQUISITOS.md)
+    - cron: '17 9 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar RPC public.ping() no Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Segredos SUPABASE_URL e SUPABASE_ANON_KEY ainda não configurados."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            -X POST "${SUPABASE_URL%/}/rest/v1/rpc/ping" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{}"
