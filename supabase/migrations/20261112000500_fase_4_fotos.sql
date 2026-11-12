@@ -1,10 +1,24 @@
 -- Fase 4a: fotos. Objetos ficam fora da transação SQL; a fila de remoção permite
 -- que a Edge Function conclua operações interrompidas sem guardar device_id.
 -- A imagem postgres do teste traz um schema Storage reduzido; no Supabase real
--- estas colunas já existem.
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public boolean NOT NULL DEFAULT false;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS file_size_limit bigint;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS allowed_mime_types text[];
+-- estas colunas já existem e as tabelas pertencem ao serviço de Storage
+-- (ALTER daria "must be owner"). Só altera quando a coluna falta.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets' AND column_name = 'public') THEN
+    ALTER TABLE storage.buckets ADD COLUMN public boolean NOT NULL DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets' AND column_name = 'file_size_limit') THEN
+    ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets' AND column_name = 'allowed_mime_types') THEN
+    ALTER TABLE storage.buckets ADD COLUMN allowed_mime_types text[];
+  END IF;
+END
+$$;
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES
   ('fotos_fila', 'fotos_fila', false, 307200, ARRAY['image/jpeg']),
@@ -59,22 +73,37 @@ ON CONFLICT (chave) DO NOTHING;
 
 -- Storage aceita só inserção do par reservado, sob o prefixo do próprio JWT.
 -- REVOKE é deliberado: SELECT exporia owner/device_id mesmo com RLS mal configurado.
-CREATE OR REPLACE FUNCTION storage.foto_reservada(p_name text)
+-- A função fica num schema próprio: no Supabase real o papel postgres não cria
+-- objetos no schema storage. O cliente só tem USAGE aqui e EXECUTE nesta função.
+CREATE SCHEMA IF NOT EXISTS fotos_politica;
+REVOKE ALL ON SCHEMA fotos_politica FROM PUBLIC;
+GRANT USAGE ON SCHEMA fotos_politica TO authenticated;
+CREATE OR REPLACE FUNCTION fotos_politica.foto_reservada(p_name text)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (SELECT 1 FROM private.fotos f WHERE f.device_id = auth.uid()
     AND f.estado = 'fila' AND p_name IN (f.caminho,f.caminho_mini));
 $$;
-REVOKE ALL ON FUNCTION storage.foto_reservada(text) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION storage.foto_reservada(text) TO authenticated;
-REVOKE ALL ON TABLE storage.objects FROM anon, authenticated;
-GRANT INSERT ON TABLE storage.objects TO authenticated;
+REVOKE ALL ON FUNCTION fotos_politica.foto_reservada(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION fotos_politica.foto_reservada(text) TO authenticated;
+-- Corte de privilégios na tabela só onde a migração é dona dela (banco de teste).
+-- No Supabase real a tabela é do serviço de Storage; ali quem fecha a leitura é o
+-- RLS: não existe política de SELECT, UPDATE nem DELETE para o cliente.
+DO $$
+BEGIN
+  IF pg_catalog.pg_has_role(current_user,
+       (SELECT c.relowner FROM pg_catalog.pg_class c WHERE c.oid = 'storage.objects'::regclass), 'USAGE') THEN
+    REVOKE ALL ON TABLE storage.objects FROM anon, authenticated;
+    GRANT INSERT ON TABLE storage.objects TO authenticated;
+  END IF;
+END
+$$;
 DROP POLICY IF EXISTS fotos_fila_inserir ON storage.objects;
 CREATE POLICY fotos_fila_inserir ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (
   bucket_id = 'fotos_fila'
   AND auth.uid() IS NOT NULL
   AND name ~ ('^' || auth.uid()::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(_mini)?[.]jpg$')
-  AND storage.foto_reservada(name)
+  AND fotos_politica.foto_reservada(name)
 );
 
 REVOKE ALL ON TABLE public.pub_fotos, private.fotos, private.fotos_para_apagar FROM PUBLIC, anon, authenticated;
