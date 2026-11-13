@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // .agents/ e .claude/ são ferramentas de agente (scripts de terceiros), não código do app
+  globalIgnores(['dist', '.agents', '.claude', 'node_modules']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

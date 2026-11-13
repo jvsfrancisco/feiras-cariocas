@@ -1,116 +1,124 @@
-import { Navigation } from 'lucide-react';
+import { CircleCheck, Clock, Navigation, Star, Store } from 'lucide-react';
+import { textoConfirmada } from '../utils/confirmacoes';
+import { diaCurto, formatarKm, modoSugerido, urlGoogleMaps } from '../utils/rotas';
+import { diaCor } from '../utils/diaCor';
+import { backendAtivo } from '../api';
+import Toldo from './Toldo';
 
-const DAY_COLORS = {
-  'Segunda-Feira': 'bg-slate-100 text-slate-800 border-slate-200',
-  'Terça-Feira': 'bg-orange-100 text-orange-800 border-orange-200',
-  'Quarta-Feira': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  'Quinta-Feira': 'bg-green-100 text-green-800 border-green-200',
-  'Sexta-Feira': 'bg-blue-100 text-blue-800 border-blue-200',
-  'Sábado': 'bg-purple-100 text-purple-800 border-purple-200',
-  'Domingo': 'bg-red-100 text-red-800 border-red-200',
-};
+export default function MarketCard({ market, userLat, userLon, index = 0, diasConfirmada = null, agora = false, mostrarDia = false, onAbrir }) {
+  const cor = diaCor(market.day);
 
-const RANDOM_EMOJIS = ['🍎', '🥬', '🥕', '🍇', '🌽', '🍊', '🥑', '🍅'];
-
-export default function MarketCard({ market, userLat, userLon, index = 0 }) {
-  const dayColor = DAY_COLORS[market.day] || 'bg-gray-100 text-gray-800 border-gray-200';
-  
-  // Deterministic emoji based on id or address length so it doesn't change on render
-  const emoji = RANDOM_EMOJIS[(market.address.length) % RANDOM_EMOJIS.length];
-
-  const handleDirections = (e, mode = 'driving') => {
-    e.stopPropagation();
-    if (userLat && userLon) {
-      const url = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(market.address + ', ' + market.bairro + ', Rio de Janeiro')}&travelmode=${mode}`;
-      window.open(url, '_blank');
-    } else {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(market.address + ', ' + market.bairro + ', Rio de Janeiro')}`;
-      window.open(url, '_blank');
-    }
+  const verRota = () => {
+    const url = urlGoogleMaps({
+      // Só o endereço (sem lat/lng), como o card já fazia: as coordenadas podem ser aproximadas.
+      feira: { address: market.address, bairro: market.bairro },
+      userLat,
+      userLon,
+      modo: modoSugerido(market.distance),
+    });
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const staggerClass = index % 3 === 0 ? '' : index % 3 === 1 ? 'stagger-1' : 'stagger-2';
+  const endereco = market.distance !== undefined
+    ? `${market.address} · ${formatarKm(market.distance)}`
+    : market.address;
+
+  // No máximo duas etiquetas, por prioridade: Agora, confirmação, Sugerida e, só com o
+  // filtro "Todos", o dia. O dia também está na linha do horário e na cor do toldo.
+  // "Sem confirmação recente" é o estado comum: só vira etiqueta quando há confirmação.
+  const etiquetas = [];
+  if (agora) etiquetas.push('agora');
+  if (diasConfirmada !== null) etiquetas.push('confirmacao');
+  if (mostrarDia) etiquetas.push('dia');
+  if (market.isCommunityAdded) backendAtivo ? etiquetas.unshift('sugerida') : etiquetas.push('sugerida');
+  if (backendAtivo && market.sugestao) etiquetas.unshift('sugestao');
+  const visiveis = etiquetas.slice(0, 2);
 
   return (
-    <article className={`bg-white rounded-[1.5rem] shadow-sm border-2 border-orange-50 overflow-hidden hover-bounce flex flex-col h-full transition-all group animate-fade-in opacity-0 ${staggerClass}`}>
-      <div className="p-6 flex-1">
-        <div className="flex justify-between items-start mb-4">
-          <span className={`text-[0.65rem] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-md border ${dayColor.replace('bg-', 'bg-transparent text-').replace('text-800', 'text-700')}`}>
-            {market.day}
-          </span>
-          {market.isCommunityAdded && (
-            <span className="text-[0.65rem] uppercase tracking-wider font-extrabold bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded-md flex items-center gap-1">
-              <span aria-hidden="true">🌟</span> Sugerida
-            </span>
-          )}
-        </div>
-
-        <h3 className="text-xl font-black text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors flex items-center gap-3">
-          <span className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-orange-50 rounded-xl text-xl transition-all group-hover:bg-orange-100 overflow-visible" aria-hidden="true">
-            <span className="transition-transform duration-300 group-hover:scale-125">{emoji}</span>
-          </span>
-          <span>Feira {market.bairro}</span>
-        </h3>
-        
-        <div className="space-y-4 mt-6 text-sm text-gray-700 font-medium border-l-2 border-gray-100 pl-4 ml-1">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-gray-600 text-[0.65rem] uppercase font-bold tracking-widest">Localização</span>
-            <span className="font-bold text-gray-900 leading-tight">{market.address}</span>
-            <span className="text-gray-500 text-xs">{market.bairro} • {market.ra}</span>
-          </div>
-          
-          <div className="flex flex-col gap-0.5">
-            <span className="text-gray-600 text-[0.65rem] uppercase font-bold tracking-widest">Horário</span>
-            <span className="font-bold text-gray-800">{market.hours}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-5 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          {market.distance !== undefined ? (
-            <div className="flex flex-col">
-              <span className="text-[0.65rem] uppercase font-bold text-gray-600 tracking-wider">Distância</span>
-              <span className="text-sm font-black text-green-700">
-                {market.distance.toFixed(1)} km
-              </span>
+    <div className={`h-full animate-fade-in motion-reduce:animate-none opacity-0 motion-reduce:opacity-100 ${staggerClass}`}>
+      <article className="market-card relative bg-papel rounded-t-xl rounded-b-[20px] border border-linha flex flex-col h-full shadow-[0_1px_2px_rgba(74,49,29,0.07)]">
+        <Toldo cor={cor.forte} />
+        {/* Corpo: começa abaixo do toldo (32 px) com 16 px de respiro */}
+        <div className="card-body px-4 pt-12 pb-4 flex flex-col flex-1">
+          {visiveis.length > 0 && (
+            <div className="badges flex flex-wrap gap-2 mb-2">
+              {visiveis.includes('agora') && (
+                <span className="badge now h-6 px-2 rounded-lg bg-areia text-tinta text-[11px] font-extrabold inline-flex items-center gap-1">
+                  <span aria-hidden="true" className="ponto-agora w-2 h-2 rounded-full bg-tinta" />
+                  Agora
+                </span>
+              )}
+              {visiveis.includes('confirmacao') && (diasConfirmada !== null ? (
+                <span className="badge h-6 px-2 rounded-lg bg-areia text-tinta text-[11px] font-extrabold inline-flex items-center gap-1">
+                  <CircleCheck size={13} strokeWidth={2.5} aria-hidden="true" />
+                  {textoConfirmada(diasConfirmada)}
+                </span>
+              ) : (
+                <span className="badge h-6 px-2 rounded-lg bg-manga-claro text-manga-escuro text-[11px] font-extrabold inline-flex items-center">
+                  Sem confirmação recente
+                </span>
+              ))}
+              {visiveis.includes('sugerida') && (
+                <span className="badge h-6 px-2 rounded-lg bg-areia text-tinta text-[11px] font-extrabold inline-flex items-center gap-1">
+                  <Star size={13} aria-hidden="true" />
+                  {backendAtivo ? 'Só neste aparelho' : 'Sugerida'}
+                </span>
+              )}
+              {visiveis.includes('sugestao') && <span className="badge min-h-6 rounded-lg bg-areia px-2 text-[11px] font-extrabold text-tinta inline-flex items-center">
+                {market.sugestao === 'minha' ? 'Aguardando confirmação' : 'Sugerida pela comunidade'}
+              </span>}
+              {visiveis.includes('dia') && (
+                <span
+                  className="badge day h-6 px-2 rounded-lg bg-areia text-tinta text-[11px] font-extrabold inline-flex items-center"
+                >
+                  {cor.rotulo ?? diaCurto(market.day)}
+                </span>
+              )}
             </div>
-          ) : (
-            <span className="text-sm text-gray-600 font-medium">—</span>
           )}
-          <div className="text-[0.65rem] font-bold text-gray-600 uppercase tracking-widest flex items-center gap-1.5">
-            <Navigation className="w-3 h-3" aria-hidden="true" />
-            Google Maps
+
+          {/* O título é o botão que abre o cartão com abas; ::after estende o toque ao card todo. */}
+          <h3 className="font-display text-[26px] leading-[1.08] font-extrabold tracking-[-0.045em] text-tinta">
+            <button
+              type="button"
+              onClick={() => onAbrir?.(market)}
+              aria-haspopup="dialog"
+                aria-label={backendAtivo && market.sugestao
+                ? `Abrir detalhes da sugestão ${market.nome || market.bairro}`
+                  : backendAtivo && market.isCommunityAdded && market.nome
+                    ? `Abrir detalhes da feira ${market.nome}`
+                : `Abrir detalhes e fotos da feira ${market.bairro}`}
+              className="card-name text-left font-[inherit] hover:underline decoration-2 underline-offset-4 after:content-[''] after:absolute after:inset-0 after:rounded-b-[20px] after:rounded-t-xl focus-visible:after:ring-2 focus-visible:after:ring-verde outline-none"
+              style={{ textDecorationColor: cor.forte }}
+            >
+                {backendAtivo && (market.sugestao || market.isCommunityAdded) && market.nome ? market.nome : `Feira ${market.bairro}`}
+            </button>
+          </h3>
+
+          <div className="card-meta my-4 flex flex-col gap-2 flex-1">
+            <p className="flex items-start gap-2 text-[13px] leading-[1.45] text-tinta-2">
+              <Store size={17} className="shrink-0 mt-0.5" aria-hidden="true" />
+              <span>{endereco}</span>
+            </p>
+            <p className="flex items-start gap-2 text-[13px] leading-[1.45] text-tinta-2">
+              <Clock size={17} className="shrink-0 mt-0.5" aria-hidden="true" />
+              <span>{cor.rotulo ?? diaCurto(market.day)} · {market.hours}</span>
+            </p>
           </div>
+
+          <button
+            type="button"
+            onClick={verRota}
+            aria-label={`Ver rota para a feira de ${market.bairro}`}
+            className="route-btn relative z-10 h-12 min-h-12 w-full rounded-full border-2 bg-papel font-bold text-sm inline-flex items-center justify-center gap-2 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-verde focus-visible:ring-offset-2 outline-none"
+            style={{ borderColor: cor.forte, color: cor.texto }}
+          >
+            <Navigation size={17} aria-hidden="true" />
+            Ver rota
+          </button>
         </div>
-        
-        <nav className="flex gap-2" aria-label="Opções de navegação">
-          <button 
-            onClick={(e) => handleDirections(e, 'driving')}
-            aria-label={`Ver rota de carro para feira de ${market.bairro}`}
-            className="flex-1 py-2 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[0.7rem] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
-          >
-            <span className="text-base group-hover/btn:scale-110 transition-transform" aria-hidden="true">🚗</span> 
-            <span>Carro</span>
-          </button>
-          <button 
-            onClick={(e) => handleDirections(e, 'walking')}
-            aria-label={`Ver rota a pé para feira de ${market.bairro}`}
-            className="flex-1 py-2 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[0.7rem] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
-          >
-            <span className="text-base group-hover/btn:scale-110 transition-transform" aria-hidden="true">🚶</span> 
-            <span>A pé</span>
-          </button>
-          <button 
-            onClick={(e) => handleDirections(e, 'bicycling')}
-            aria-label={`Ver rota de bicicleta para feira de ${market.bairro}`}
-            className="flex-1 py-2 px-2 bg-white text-gray-700 hover:text-orange-600 hover:border-orange-200 border border-gray-200 rounded-xl font-bold text-[0.7rem] shadow-sm transition-all flex items-center justify-center gap-1 group/btn whitespace-nowrap focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
-          >
-            <span className="text-base group-hover/btn:scale-110 transition-transform" aria-hidden="true">🚲</span> 
-            <span>Bike</span>
-          </button>
-        </nav>
-      </div>
-    </article>
+      </article>
+    </div>
   );
 }

@@ -8,4 +8,6 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // O MapLibre acha o worker pelo caminho do próprio arquivo; o pré-empacotamento do dev quebra isso.
+  optimizeDeps: { exclude: ['maplibre-gl'] },
 })
