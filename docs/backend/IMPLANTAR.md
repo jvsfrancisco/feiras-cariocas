@@ -8,7 +8,7 @@ Este guia descreve o passo a passo para criar e configurar o projeto no Supabase
 
 1. Acesse [https://supabase.com/dashboard](https://supabase.com/dashboard) e crie uma organização/conta (plano **Free**).
 2. Clique em **New project**:
-   - **Name:** `olha-a-feira`
+   - **Name:** `olha-a-feira-rj`
    - **Database Password:** gere uma senha forte e guarde em local seguro.
    - **Region:** selecione **`South America (São Paulo) — sa-east-1`** (requisito de latência da seção 11, critério 12).
 3. Aguarde a provisão concluir (~1–2 minutos).
