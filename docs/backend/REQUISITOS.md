@@ -94,14 +94,14 @@ Primeira proposta de feira sem trecho: `anterior_id` nulo; reverter significa vo
 - Vira `ativa` com **3 apoios** (aparelhos ≥ 24 h, sem contar o autor). Negada com 3 negações e mais negações que apoios. Pendente sem quórum por 30 dias some.
 - Duplicata (feira existente a < 150 m no mesmo dia): **recusada** com link "Corrigir o trecho desta feira". Feira `pendente` aceita só apoio (nada de foto, confirmação ou trecho).
 - Limite: 3 sugestões por aparelho por semana.
-- **Migração:** ao ligar a API, enviar cada feira local como `sugerir_feira` e guardar o mapa `idLocal → idServidor` no localStorage; a local some da lista quando o servidor a devolve. Re-chavear fotos (IndexedDB, chave `String(feiraId)`) e confirmações locais ligadas a ela. Ids locais são `Date.now()`, os do `INITIAL_FEIRAS` são números; o mapa cuida da diferença.
+- **Feiras locais [Decisão, 2026-11]:** não há migração automática ao ligar a API. A feira local continua só no aparelho, e o cartão dela oferece enviá-la; o envio é um `sugerir_feira` comum, com a posição medida do autor na hora (se a feira tem ponto salvo, o autor precisa estar a ≤ 150 m dele). Quando o servidor aceita, o cliente guarda o mapa `idLocal → idServidor` no localStorage (`olhafeira_ids_sugestoes`) e re-chaveia as fotos (IndexedDB, chave `String(feiraId)`) e as confirmações locais ligadas a ela (`vincularFeiraLocal`). Ids locais são `Date.now()`, os do `INITIAL_FEIRAS` são números; o mapa cuida da diferença.
 
 ### 7.4 Fotos (fase 4, por último)
 - **Só depois de política de privacidade e presença declarada** (foto exige estar na feira).
 - Upload para o bucket **privado** `fotos_fila` (≤ 300 KB, só `image/jpeg`, miniatura de ~320 px gerada no cliente junto). Uma Edge Function confere os bytes mágicos de JPEG, **recodifica a foto e a miniatura** (as duas: tira EXIF e arquivo disfarçado) e só então move para o bucket público `fotos`, **e só se a foto for para exibição**. Foto em revisão (aparelho novo) e foto arquivada ficam no privado até a decisão. Upload só no caminho `fotos_fila/<auth.uid()>/<uuid>.jpg`, sem sobrescrita (`upsert` negado); a função confere no servidor dono, feira e presença antes de promover.
   Sem política de SELECT em `storage.objects` (a coluna `owner` expõe o `device_id`). Nome do arquivo = UUID aleatório (não adivinhável).
 - **Foto escondida some de verdade:** ao esconder, a função **move** foto e miniatura do bucket público para o privado `fotos_quarentena` (na origem, a URL antiga passa a dar 404). **Foto escondida por denúncia só volta por decisão explícita do admin**, nunca por prazo. Só o admin lê, por URL assinada de 60 s. Resíduo aceito: cópia em cache de CDN por até 24 h, por isso o `Cache-Control` das fotos é de 1 dia, não de 1 ano.
-- Limites: 3 fotos novas por feira por dia (global), 5 por aparelho por dia, 20 por semana, **teto global de 200 uploads por dia** (em `config`). Aparelho com < 7 dias: as 3 primeiras vão para revisão e não aparecem.
+- Limites: 3 fotos novas por feira por dia (global), 5 por aparelho por dia, 20 por semana, **teto global de 200 uploads por dia** (em `config`). Aparelho com < 7 dias (`config.idade_min_propor`, o mesmo de propor trecho): **todas** as fotos vão para revisão e não aparecem; a partir do 7º dia, as novas aparecem direto. [Decisão, 2026-11: substitui "as 3 primeiras vão para revisão".]
 - **12 visíveis por feira**; as demais ficam arquivadas (no privado) e **apagadas após 30 dias** (job agendado). Foto em revisão de aparelho novo sem decisão em 30 dias é **apagada**, não publicada.
 - **Denúncia:** só conta de aparelho com ≥ 24 h (até 10 por dia). 3 denúncias de aparelhos diferentes escondem.
 - Exibição: miniaturas na grade e foto inteira só ao tocar (egress do plano gratuito, 5 GB/mês, é o gargalo, não o espaço); `Cache-Control: max-age=86400` (um só valor, em `config`).
@@ -118,7 +118,7 @@ Primeira proposta de feira sem trecho: `anterior_id` nulo; reverter significa vo
 3. **Comportamento:** cada `texto_proibido` vai para `admin.v_textos_barrados` (só o hash do aparelho, o motivo e a hora, **sem guardar o texto**). 3 em 24 h: aparelho bloqueado para escrita por 7 dias; 10 no total: bloqueio permanente (`bloquear_dispositivo`). Chega a ser um limite de `config`.
 4. **Nada público antes de quórum:** sugestão só aparece para os outros depois de 1 apoio presente (7.3). Texto ofensivo que passar pelo filtro fica visível só para o autor até lá.
 5. **Denúncia de sugestão** com os mesmos 3 aparelhos distintos que escondem foto (7.4); escondida volta a `oculta`.
-6. **Limite honesto:** isto reduz, não zera. Imagem ofensiva não é pega por lista de palavras; só pela quarentena, pela revisão das 3 primeiras fotos de aparelho novo e pela denúncia (7.4), e fica a lacuna se um dia houver volume. Sem equipe, quem revisa é o João por `admin.*`.
+6. **Limite honesto:** isto reduz, não zera. Imagem ofensiva não é pega por lista de palavras; só pela quarentena, pela revisão das fotos de aparelho novo e pela denúncia (7.4), e fica a lacuna se um dia houver volume. Sem equipe, quem revisa é o João por `admin.*`.
 
 ## 8. Privacidade e LGPD
 
