@@ -110,7 +110,15 @@ function FeiraCartaoComum({
     avisoTimerRef.current = setTimeout(() => {
       setAvisoLocal('');
       avisoTimerRef.current = null;
-    }, 4000);
+    }, 6000);
+  };
+
+  const fecharAvisoLocal = () => {
+    if (avisoTimerRef.current) {
+      clearTimeout(avisoTimerRef.current);
+      avisoTimerRef.current = null;
+    }
+    setAvisoLocal('');
   };
 
   const enviarFeiraLocal = async () => {
@@ -458,7 +466,7 @@ function FeiraCartaoComum({
           </div>
         )}
       </div>
-      {!onAviso && backendAtivo && <Aviso mensagem={avisoLocal} />}
+      {!onAviso && backendAtivo && <Aviso mensagem={avisoLocal} onFechar={fecharAvisoLocal} />}
     </div>
   );
 }
