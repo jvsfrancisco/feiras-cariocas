@@ -212,13 +212,17 @@ export async function obterTokenTurnstile() {
       resolve(token);
     };
 
-    const timer = window.setTimeout(() => concluir(undefined, undefined), 10000);
+    let widgetId;
+    const timer = window.setTimeout(() => concluir(undefined, widgetId), 10000);
     try {
-      const widgetId = window.turnstile.render(container, {
+      widgetId = window.turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
         // O modo invisível é escolhido no painel da Cloudflare ("Widget Mode: Invisible").
         // `size` só aceita normal, flexible ou compact; "invisible" aqui quebra o render.
         language: 'pt-br',
+        // Sem nova tentativa automática: o app trata a falha (código `captcha`) e já removeu o widget,
+        // e o reset do Turnstile num contêiner removido lança "Nothing to reset found".
+        retry: 'never',
         callback: (token) => {
           window.clearTimeout(timer);
           concluir(token, widgetId);
@@ -226,6 +230,7 @@ export async function obterTokenTurnstile() {
         'error-callback': () => {
           window.clearTimeout(timer);
           concluir(undefined, widgetId);
+          return true; // erro tratado aqui
         },
       });
     } catch {
