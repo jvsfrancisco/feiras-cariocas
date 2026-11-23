@@ -23,6 +23,7 @@ import { dentroDoHorarioDaFeira, textoConfirmada } from '../utils/confirmacoes';
 import { formatarKm, modoSugerido, urlGoogleMaps } from '../utils/rotas';
 import { diaCor } from '../utils/diaCor';
 import { diasParaTerminar } from '../utils/diasTermino';
+import { tituloDaFeira } from '../utils/tituloFeira';
 
 const ABAS = [
   { id: 'sobre', rotulo: 'Sobre' },
@@ -62,9 +63,13 @@ function FeiraCartaoComum({
   onApagarDados,
   abaInicial = 'sobre',
   tituloRef,
-    dentroDeDialogo = false,
+  todas,
+  dentroDeDialogo = false,
 }) {
   const cor = diaCor(market.day);
+  const titulo = backendAtivo && market.isCommunityAdded && market.nome
+    ? market.nome
+    : tituloDaFeira(market, todas);
   const [aba, setAba] = useState(abaInicial);
   const base = useId();
   const abasRef = useRef({});
@@ -279,7 +284,7 @@ function FeiraCartaoComum({
             tabIndex={-1}
             className="font-display text-[27px] leading-[1.05] font-extrabold tracking-[-0.05em] text-tinta outline-none"
           >
-              {backendAtivo && market.isCommunityAdded && market.nome ? market.nome : `Feira ${market.bairro}`}
+            {titulo}
           </h2>
           {backendAtivo && market.isCommunityAdded && <span className="inline-flex rounded-lg bg-areia px-2 py-1 text-xs font-extrabold text-tinta">Só neste aparelho</span>}
           <p className="sheet-location text-xs text-tinta-2 mt-2 mb-4">
