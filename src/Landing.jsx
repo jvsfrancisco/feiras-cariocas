@@ -135,7 +135,7 @@ export default function Landing() {
                 Ela muda de dia, de horário e às vezes de lugar. A lista oficial é um arquivo que a Prefeitura publica, e ninguém avisa quando alguma coisa muda. Quem chega cedo e não encontra a feira perde a viagem.
               </p>
               <p>
-                <strong>Já foi à feira e ela não estava lá?</strong> Aqui, quem chega confirma, e o app mostra quando foi a última confirmação neste aparelho.
+                <strong>Já foi à feira e ela não estava lá?</strong> Aqui, quem chega confirma, e o app mostra quando foi a última confirmação.
               </p>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function Landing() {
             <div>
               <h2 id="how-title">Como funciona, em três passos.</h2>
             </div>
-            <p className="aside">Dados oficiais no mapa. Sua confirmação fica só no seu aparelho.</p>
+            <p className="aside">Dados oficiais no mapa. Confirmação compartilhada, sem cadastro.</p>
           </div>
           <div className="steps">
             <article className="step">
@@ -162,7 +162,7 @@ export default function Landing() {
             <article className="step">
               <span className="step-num">3</span>
               <h3>Veja a data da última confirmação</h3>
-              <p>Confirmação recente aparece com a data. As confirmações ficam só neste aparelho.</p>
+              <p>Confirmação recente aparece com a data, compartilhada sem cadastro nem nome.</p>
             </article>
           </div>
         </section>
@@ -264,19 +264,19 @@ export default function Landing() {
             <details>
               <summary>É da Prefeitura?</summary>
               <p>
-                Os dados das feiras vêm da lista da Prefeitura do Rio. As confirmações de quem vai à feira ficam só neste aparelho e não são enviadas a ninguém.
+                Os dados das feiras vêm da lista da Prefeitura do Rio. Confirmações, sugestões de feira, propostas de trecho e fotos são enviadas ao servidor (Supabase), sem vínculo com a Prefeitura.
               </p>
             </details>
             <details>
               <summary>Preciso de conta?</summary>
               <p>
-                Não. O app não tem cadastro nem login. Tudo o que você confirma fica neste aparelho.
+                Não. O app não pede cadastro nem nome. Ao confirmar, sugerir feira, propor trecho ou mandar foto, o aparelho recebe um identificador anônimo e o envio passa pelo servidor (Supabase).
               </p>
             </details>
             <details>
               <summary>Por que pedem localização?</summary>
               <p>
-                Para mostrar as feiras perto de você e perguntar se a feira está acontecendo quando você chega. Sua posição não fica ligada ao seu nome. Ao tocar em rota ou em Google Maps, sua posição é enviada a esses serviços para calcular o caminho.
+                Para mostrar as feiras perto de você, perguntar se a feira está acontecendo e checar que você está na feira ao confirmar, sugerir feira, propor trecho ou mandar foto. Sua posição não fica ligada ao seu nome. Ao tocar em rota ou em Google Maps, sua posição é enviada a esses serviços para calcular o caminho.
               </p>
             </details>
           </div>

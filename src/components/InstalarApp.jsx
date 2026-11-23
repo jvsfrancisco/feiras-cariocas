@@ -85,7 +85,7 @@ export default function InstalarApp() {
     <div
       role="region"
       aria-label="Instalar o app"
-      className="aviso-entra fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-[1100] mx-auto flex max-w-md items-center gap-3 rounded-[16px] bg-tinta px-4 py-3 text-papel shadow-[0_8px_24px_rgba(59,42,32,0.28)] motion-reduce:animate-none"
+      className="aviso-entra fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-[1100] mx-auto flex max-w-md items-center gap-3 rounded-[16px] bg-tinta px-4 py-3 text-papel shadow-[0_8px_24px_rgba(59,42,32,0.28)] motion-reduce:animate-none md:right-4 md:bottom-4 md:left-auto md:mx-0 md:w-full md:max-w-[400px]"
     >
       <div className="min-w-0 flex-1">
         <p className="m-0 text-sm leading-6 font-bold">Instale o Olha a Feira</p>
