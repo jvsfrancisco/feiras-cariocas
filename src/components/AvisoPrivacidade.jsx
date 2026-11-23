@@ -71,11 +71,13 @@ export default function AvisoPrivacidade({
             ? 'código anônimo de sessão, sua foto e a posição medida para conferir presença. A coordenada exata não é salva.'
             : acao === 'sugestão'
             ? 'código anônimo de sessão, nome, endereço, bairro, dia, horário e a posição medida. O ponto da sugestão fica público quando ela é publicada.'
-            : acao === 'denúncia'
-              ? 'código anônimo de sessão e a sugestão denunciada.'
-              : acao === 'apoio'
-                ? 'código anônimo de sessão, seu voto e, se disponível, sua posição para verificar presença. A coordenada do apoio não é salva.'
-                : 'código anônimo de sessão (sem nome nem e-mail), sua resposta e a distância aproximada arredondada a 10 m. Sua coordenada exata não é salva.'} O Supabase registra IP apenas em logs técnicos de infraestrutura.
+            : acao === 'proposta'
+              ? 'código anônimo de sessão, o trecho proposto, o motivo e a posição medida para conferir presença. Sua coordenada exata não é salva.'
+              : acao === 'denúncia'
+                ? 'código anônimo de sessão e a sugestão denunciada.'
+                : acao === 'apoio' || acao === 'voto'
+                  ? 'código anônimo de sessão, seu voto e, se disponível, sua posição para verificar presença. Sua coordenada exata não é salva.'
+                  : 'código anônimo de sessão (sem nome nem e-mail), sua resposta e a posição medida para conferir presença. O servidor guarda só a distância arredondada a 10 m, sem a coordenada exata.'} O Supabase registra IP apenas em logs técnicos de infraestrutura.
         </p>
         <p className="m-0">
           <strong className="text-tinta">O que é público:</strong> {acao === 'foto'
@@ -93,7 +95,9 @@ export default function AvisoPrivacidade({
             ? 'fotos em revisão sem decisão e fotos arquivadas somem em até 30 dias.'
             : acao === 'sugestão'
             ? 'sugestões pendentes sem apoio suficiente somem após 30 dias.'
-            : 'confirmações duram 30 dias e sessões sem uso somem em 90 dias.'} Você pode apagar seus dados enviados.
+            : acao === 'proposta'
+              ? 'propostas de trecho sem quórum expiram em 14 dias e sessões sem uso somem em 90 dias.'
+              : 'confirmações duram 30 dias e sessões sem uso somem em 90 dias.'} Você pode apagar seus dados enviados.
         </p>
         {acao === 'foto' && <p className="m-0">Evite rostos e placas de carro. A foto fica pública.</p>}
       </div>
