@@ -12,7 +12,9 @@ export default function MarketCard({ market, userLat, userLon, index = 0, diasCo
   const cor = diaCor(market.day);
   const titulo = backendAtivo && (market.sugestao || market.isCommunityAdded) && market.nome
     ? market.nome
-    : tituloDaFeira(market);
+    : tituloDaFeira(market, undefined, { comEndereco: false });
+  // Leitor de tela não vê a rua logo abaixo do título: o nome completo vai no aria-label.
+  const tituloCompleto = tituloDaFeira(market);
 
   const verRota = () => {
     const url = urlGoogleMaps({
@@ -94,7 +96,7 @@ export default function MarketCard({ market, userLat, userLon, index = 0, diasCo
                 ? `Abrir detalhes da sugestão ${market.nome || market.bairro}`
                 : backendAtivo && market.isCommunityAdded && market.nome
                   ? `Abrir detalhes da feira ${market.nome}`
-                  : `Abrir detalhes e fotos da ${titulo}`}
+                  : `Abrir detalhes e fotos da ${tituloCompleto}`}
               className="card-name text-left font-[inherit] hover:underline decoration-2 underline-offset-4 after:content-[''] after:absolute after:inset-0 after:rounded-b-[20px] after:rounded-t-xl focus-visible:after:ring-2 focus-visible:after:ring-verde outline-none"
               style={{ textDecorationColor: cor.forte }}
             >

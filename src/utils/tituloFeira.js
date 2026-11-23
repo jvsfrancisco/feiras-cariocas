@@ -51,7 +51,8 @@ function contarNoBairro(bairro, todas) {
   return contagemCache.get(chave) ?? 0;
 }
 
-export function tituloDaFeira(market, todas) {
+// comEndereco: false devolve o título curto, para telas que já mostram a rua logo abaixo.
+export function tituloDaFeira(market, todas, { comEndereco = true } = {}) {
   if (!market) return '';
   const info = market.id != null ? TRECHOS_INFO[market.id] : null;
   if (info?.titulo) {
@@ -62,7 +63,7 @@ export function tituloDaFeira(market, todas) {
   const bairro = String(market.bairro ?? '').trim();
   const endereco = String(market.address ?? '').trim();
   if (!bairro) return endereco ? `Feira ${endereco}` : '';
-  if (contarNoBairro(bairro, todas) > 1 && endereco) {
+  if (comEndereco && contarNoBairro(bairro, todas) > 1 && endereco) {
     return `Feira ${bairro} · ${endereco}`;
   }
   return `Feira ${bairro}`;
