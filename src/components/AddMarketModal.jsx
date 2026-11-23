@@ -8,6 +8,8 @@ import AvisoPrivacidade from './AvisoPrivacidade';
 import { aceitarPrivacidade, backendAtivo, mensagemParaCodigo, privacidadeAceita, sugerirFeira } from '../api';
 import { diaAtualSaoPaulo, diaNumero, encontrarDuplicada, localizacaoAtual } from '../utils/sugestoes';
 import { dentroDoHorarioDaFeira } from '../utils/confirmacoes';
+import { acharDuplicada } from '../utils/duplicadas';
+import { INITIAL_FEIRAS } from '../data/feiras';
 
 const DIAS = ['Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado', 'Domingo'];
 
@@ -15,6 +17,15 @@ const iconeEdicao = pinoEdicaoIcone();
 
 const CAMPO =
   'w-full rounded-[10px] border border-[#B8A892] bg-papel px-3 h-12 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition-all placeholder:text-tinta-2 font-medium text-tinta';
+
+function feirasLocais() {
+  try {
+    const locais = JSON.parse(localStorage.getItem('feiras_cariocas_custom') || '[]');
+    return Array.isArray(locais) ? locais : [];
+  } catch {
+    return [];
+  }
+}
 
 function ModalMapUpdater({ lat, lng }) {
   const map = useMap();
@@ -42,6 +53,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
   const [mensagem, setMensagem] = useState('');
   const [podeSalvarLocal, setPodeSalvarLocal] = useState(false);
   const [duplicada, setDuplicada] = useState(null);
+  const [avisoDuplicada, setAvisoDuplicada] = useState(null);
   const [agora, setAgora] = useState(() => new Date());
 
   useEffect(() => {
@@ -75,6 +87,10 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
     if (mostrarPolitica) requestAnimationFrame(() => dialogRef.current?.querySelector('#privacy-title')?.focus());
   }, [mostrarPolitica]);
 
+  useEffect(() => {
+    if (avisoDuplicada) requestAnimationFrame(() => dialogRef.current?.querySelector('#cancelar-duplicada')?.focus());
+  }, [avisoDuplicada]);
+
   const [formData, setFormData] = useState({
     nome: '',
     address: '',
@@ -86,6 +102,10 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
   });
 
   if (!isOpen) return null;
+
+  // O App passa a lista já filtrada pela busca e pelo dia; a base e as locais
+  // completam a checagem quando uma feira existente está fora do filtro atual.
+  const existentes = [...markets, ...INITIAL_FEIRAS, ...feirasLocais()];
 
   const horarioAgora = () => dentroDoHorarioDaFeira({
     day: formData.day, hours: `${formData.timeStart}–${formData.timeEnd}`,
@@ -144,10 +164,10 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
     }
   };
 
-  const salvarLocal = async ({ semGeocodificar = false } = {}) => {
+  const salvarLocal = async ({ semGeocodificar = false, coordenadas = null, ignorarAviso = false } = {}) => {
     // If the user didn't use the map, try to geocode silently one last time
-    let finalLat = pinLocation?.lat || null;
-    let finalLng = pinLocation?.lng || null;
+    let finalLat = coordenadas?.lat ?? pinLocation?.lat ?? null;
+    let finalLng = coordenadas?.lng ?? pinLocation?.lng ?? null;
 
     if (!semGeocodificar && (!finalLat || !finalLng)) {
       setIsGeocoding(true);
@@ -174,7 +194,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
       setIsGeocoding(false);
     }
 
-    onAdd({
+    const feiraNova = {
       nome: formData.nome,
       address: formData.address,
       bairro: formData.bairro,
@@ -184,7 +204,16 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
       lat: finalLat,
       lng: finalLng,
       isCommunityAdded: true
-    });
+    };
+    const encontrada = !ignorarAviso && acharDuplicada(feiraNova, existentes);
+    if (encontrada) {
+      setAvisoDuplicada({ feira: encontrada, acao: 'local', coordenadas: { lat: finalLat, lng: finalLng } });
+      return;
+    }
+    if (onAdd(feiraNova) === null) {
+      setMensagem('Esta feira já está salva neste aparelho.');
+      return;
+    }
 
     if (!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) confetti({
       particleCount: 150,
@@ -196,14 +225,14 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
     handleClose();
   };
 
-  const enviarComunidade = async () => {
+  const enviarComunidade = async ({ ignorarAviso = false, localConfirmado = null } = {}) => {
     if (!horarioAgora()) { salvarLocal({ semGeocodificar: true }); return; }
     setIsGeocoding(true);
     setMensagem('');
     setPodeSalvarLocal(false);
     setDuplicada(null);
     let local;
-    try { local = await localizacaoAtual(); }
+    try { local = localConfirmado ?? await localizacaoAtual(); }
     catch (erro) {
       setMensagem(erro.message);
       setIsGeocoding(false);
@@ -212,6 +241,12 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
     if (!horarioAgora()) {
       setIsGeocoding(false);
       salvarLocal({ semGeocodificar: true });
+      return;
+    }
+    const encontrada = !ignorarAviso && acharDuplicada({ day: formData.day, ...local }, existentes);
+    if (encontrada) {
+      setIsGeocoding(false);
+      setAvisoDuplicada({ feira: encontrada, acao: 'comunidade', local });
       return;
     }
     const res = await sugerirFeira({
@@ -231,6 +266,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (avisoDuplicada) return;
     if (!backendAtivo) { salvarLocal(); return; }
     if (!horarioAgora()) { salvarLocal({ semGeocodificar: true }); return; }
     if (!privacidadeAceita()) { setMostrarPolitica(true); return; }
@@ -244,6 +280,7 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
     setMensagem('');
     setPodeSalvarLocal(false);
     setDuplicada(null);
+    setAvisoDuplicada(null);
     setMostrarPolitica(false);
     onClose();
   };
@@ -424,6 +461,26 @@ export default function AddMarketModal({ isOpen, onClose, onAdd, onEnviado, onVe
                 className="mt-2 min-h-12 font-bold text-verde-escuro underline focus-visible:ring-2 focus-visible:ring-verde">
                 Ver feira
               </button>}
+            </div>}
+
+            {avisoDuplicada && <div role="alert" className="rounded-xl border border-verde bg-creme p-4 text-sm text-tinta">
+              <p className="m-0 font-bold">
+                Já existe a Feira {String(avisoDuplicada.feira.trechosInfo?.titulo ?? avisoDuplicada.feira.nome ?? avisoDuplicada.feira.address ?? 'sem nome').replace(/^Feira\s+/i, '')} ({avisoDuplicada.feira.address ?? avisoDuplicada.feira.endereco}, {avisoDuplicada.feira.day}) a menos de 150 m. É a mesma?
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <button id="cancelar-duplicada" type="button" onClick={handleClose}
+                  className="min-h-12 rounded-full bg-verde px-4 font-bold text-papel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-verde">
+                  É a mesma, cancelar
+                </button>
+                <button type="button" onClick={() => {
+                  const pendente = avisoDuplicada;
+                  setAvisoDuplicada(null);
+                  if (pendente.acao === 'local') salvarLocal({ semGeocodificar: true, coordenadas: pendente.coordenadas, ignorarAviso: true });
+                  else enviarComunidade({ localConfirmado: pendente.local, ignorarAviso: true });
+                }} className="min-h-12 rounded-full border-2 border-verde bg-papel px-4 font-bold text-verde-escuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-verde">
+                  É outra feira, continuar
+                </button>
+              </div>
             </div>}
 
             {podeSalvarLocal && !salvarPorHorario && <button type="button" onClick={salvarLocal}
