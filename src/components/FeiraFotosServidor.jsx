@@ -4,27 +4,68 @@ import AvisoPrivacidade from './AvisoPrivacidade';
 import Fruta from './Frutas';
 import { aceitarPrivacidade, apagarFoto, denunciarFoto, enviarFoto, lerFotos, mensagemParaCodigo, pedirUpload, privacidadeAceita } from '../api';
 import { calculateDistance } from '../utils/distance';
-import { dentroDoHorarioDaFeira } from '../utils/confirmacoes';
+import { dentroDoHorarioDaFeira, distanciaAoTrechoMetros, lerHorario } from '../utils/confirmacoes';
 import { listarFotos, removerFoto } from '../utils/fotos';
 import { localizacaoAtual } from '../utils/sugestoes';
 import { prepararFoto } from '../utils/comprimirFoto';
 import { apagarMiniatura, esquecerMinhaFoto, lerFotosOcultas, lerMiniatura, lerMinhasFotos, ocultarFoto, salvarMiniatura, salvarMinhaFoto } from '../utils/fotosServidor';
 
 const SEM_REDE = 'Sem conexão. Tente de novo quando a internet voltar.';
-const EXPLICACAO = 'Dá para mandar foto estando na feira, no horário dela.';
 const BOTAO = 'min-h-12 px-4 rounded-full font-extrabold text-sm focus-visible:ring-2 focus-visible:ring-verde focus-visible:ring-offset-2 outline-none';
+const DIAS = ['Domingo', 'Segunda-Feira', 'Terça-Feira', 'Quarta-Feira', 'Quinta-Feira', 'Sexta-Feira', 'Sábado'];
+const DIAS_INGLES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function mensagem(res, acao) {
   return res?.offline || res?.codigo === 'sem_conexao' ? SEM_REDE : mensagemParaCodigo(res?.codigo, acao);
 }
 
+function horarioComTolerancia(market, agora) {
+  if (dentroDoHorarioDaFeira(market, agora, 60)) return true;
+  const horario = lerHorario(market?.hours);
+  if (!horario) return false;
+  const partes = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo', weekday: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(agora).map(({ type, value }) => [type, value]));
+  const dia = DIAS_INGLES.indexOf(partes.weekday);
+  const minutos = Number(partes.hour) * 60 + Number(partes.minute);
+  return (horario.inicio < 60 && market.day === DIAS[(dia + 1) % 7] && minutos >= 1440 + horario.inicio - 60)
+    || (horario.fim + 60 >= 1440 && market.day === DIAS[(dia + 6) % 7] && minutos <= horario.fim + 60 - 1440);
+}
+
+function motivoPresenca(market, posicao) {
+  if (market?.status !== 'ativa') return 'Esta feira não está disponível para receber fotos agora.';
+  if (!market.coord_precisa) return 'Esta feira ainda não tem localização precisa para fotos.';
+  if (!Number.isFinite(posicao?.lat) || !Number.isFinite(posicao?.lng)) return 'Ative sua localização para mandar uma foto da feira.';
+  if (!Number.isFinite(posicao?.accuracy) || posicao.accuracy <= 0) return 'Não foi possível conferir a precisão do GPS. Tente localizar-se de novo.';
+  if (posicao.accuracy > 100) return `O GPS está com margem de erro grande (${Math.round(posicao.accuracy)} m); vá para um lugar aberto`;
+  if (!horarioComTolerancia(market, new Date())) {
+    const horario = lerHorario(market.hours);
+    if (horario && market.day) {
+      const hora = (minutos) => `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
+      return `A feira funciona ${market.day.toLowerCase()} das ${hora(horario.inicio)} às ${hora(horario.fim)}; dá para mandar foto de 1 h antes até 1 h depois`;
+    }
+    return 'Não foi possível conferir o horário desta feira.';
+  }
+  const trechoMetros = distanciaAoTrechoMetros(posicao, market.trecho);
+  const distanciaMetros = Number.isFinite(trechoMetros) ? trechoMetros
+    : Number.isFinite(market.lat) && Number.isFinite(market.lng)
+      ? calculateDistance(posicao.lat, posicao.lng, market.lat, market.lng) * 1000 : Infinity;
+  if (!Number.isFinite(distanciaMetros)) return 'Esta feira ainda não tem localização precisa para fotos.';
+  if (distanciaMetros > 150) return `Você está a ${Math.round(distanciaMetros)} m da feira (limite 150 m)`;
+  return null;
+}
+
 function presencaValida(market, posicao) {
-  return market?.status === 'ativa' && market.coord_precisa
-    && dentroDoHorarioDaFeira(market, new Date(), 0)
-    && Number.isFinite(posicao?.lat) && Number.isFinite(posicao?.lng)
-    && Number.isFinite(posicao?.accuracy) && posicao.accuracy <= 100
-    && Number.isFinite(market.lat) && Number.isFinite(market.lng)
-    && calculateDistance(posicao.lat, posicao.lng, market.lat, market.lng) <= 0.15;
+  return motivoPresenca(market, posicao) === null;
+}
+
+function dataDaFoto(criadoEm) {
+  const data = new Date(criadoEm);
+  if (Number.isNaN(data.getTime())) return null;
+  const partes = Object.fromEntries(new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo', day: 'numeric', month: 'short', year: 'numeric',
+  }).formatToParts(data).map(({ type, value }) => [type, value]));
+  return `${partes.day} ${partes.month.replace('.', '')} ${partes.year}`;
 }
 
 export default function FeiraFotosServidor({ market, userLat, userLon, userAccuracy, onPedirLocal }) {
@@ -39,8 +80,11 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
   const [politica, setPolitica] = useState(false);
   const [confirmacao, setConfirmacao] = useState(null);
   const [indice, setIndice] = useState(null);
-  const entradaRef = useRef(null);
+  const entradaCameraRef = useRef(null);
+  const entradaGaleriaRef = useRef(null);
   const adicionarRef = useRef(null);
+  const galeriaRef = useRef(null);
+  const tipoPendenteRef = useRef('camera');
   const urlsRef = useRef([]);
   const aberturaRef = useRef(null);
   const acaoRef = useRef(null);
@@ -123,15 +167,17 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
   useEffect(() => { if (confirmacao) confirmacaoRef.current?.focus(); }, [confirmacao]);
   useEffect(() => { if (politica) politicaRef.current?.querySelector('h2')?.focus(); }, [politica]);
 
-  const iniciarEnvio = () => {
+  const iniciarEnvio = (tipo) => {
     setErro(''); setAviso('');
-    if (!podeEnviar) {
+    const motivo = motivoPresenca(market, posicaoConhecida);
+    if (motivo) {
       if (!Number.isFinite(userLat) || !Number.isFinite(userLon)) onPedirLocal?.();
-      setAviso(EXPLICACAO);
+      setAviso(motivo);
       return;
     }
+    tipoPendenteRef.current = tipo;
     if (!privacidadeAceita()) { setPolitica(true); return; }
-    entradaRef.current?.click();
+    (tipo === 'camera' ? entradaCameraRef : entradaGaleriaRef).current?.click();
   };
 
   const aoEscolher = async (e) => {
@@ -141,7 +187,8 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
     setOcupado(true); setErro(''); setAviso('');
     try {
       const posicao = await localizacaoAtual();
-      if (!presencaValida(market, posicao)) { setErro(EXPLICACAO); return; }
+      const motivo = motivoPresenca(market, posicao);
+      if (motivo) { setErro(motivo); return; }
       let foto;
       let miniatura;
       try { ({ foto, miniatura } = await prepararFoto(arquivo)); }
@@ -159,8 +206,7 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
       if (resposta.estado === 'visivel') {
         setAviso('Foto publicada.');
         await atualizarPublicas();
-      } else if (resposta.estado === 'revisao') setAviso('Sua foto vai aparecer depois de uma conferência.');
-      else setAviso(mensagem(resposta, 'foto'));
+      } else setAviso(mensagem(resposta, 'foto'));
     } catch (falha) {
       setErro(falha?.message?.startsWith('Ative sua localização')
         ? 'Ative sua localização para mandar foto estando na feira.' : SEM_REDE);
@@ -204,7 +250,8 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
 
   return (
     <div className="flex flex-col gap-4 min-w-0">
-      <input ref={entradaRef} type="file" accept="image/*" capture="environment" onChange={aoEscolher} className="sr-only" tabIndex={-1} aria-hidden="true" />
+      <input ref={entradaCameraRef} type="file" accept="image/*" capture="environment" onChange={aoEscolher} className="sr-only" tabIndex={-1} aria-hidden="true" />
+      <input ref={entradaGaleriaRef} type="file" accept="image/*" onChange={aoEscolher} className="sr-only" tabIndex={-1} aria-hidden="true" />
       {erro && <p role="alert" className="text-sm leading-6 text-tomate flex items-start gap-2"><TriangleAlert size={16} className="shrink-0 mt-1" aria-hidden="true" />{erro}</p>}
       {aviso && <p role="status" className="text-sm leading-6 text-verde-escuro">{aviso}</p>}
       {estado === 'carregando' && <p role="status" className="text-sm leading-6 text-tinta-2 text-center">Abrindo as fotos...</p>}
@@ -255,15 +302,21 @@ export default function FeiraFotosServidor({ market, userLat, userLon, userAccur
           <button type="button" disabled={ocupado} onClick={executarConfirmacao} className={`${BOTAO} bg-tomate text-papel disabled:opacity-50`}>{ocupado ? 'Aguarde…' : confirmacao.tipo === 'denunciar' ? 'Denunciar' : 'Apagar'}</button>
         </div>
       </section>}
-      {politica && <div ref={politicaRef}><AvisoPrivacidade acao="foto" temPendente mostrarAlca={false} className="rounded-xl border border-linha" onConfirmar={() => { if (aceitarPrivacidade()) { setPolitica(false); entradaRef.current?.click(); } }} onCancelar={() => { setPolitica(false); queueMicrotask(() => adicionarRef.current?.focus()); }} /></div>}
-      <button ref={adicionarRef} type="button" disabled={ocupado || estado === 'carregando'} onClick={iniciarEnvio} className={`${BOTAO} photo-add w-full bg-verde text-papel inline-flex items-center justify-center gap-2 disabled:opacity-50`}>
-        <Camera size={20} aria-hidden="true" />{ocupado ? 'Enviando…' : 'Adicionar foto'}
-      </button>
-      {!podeEnviar && <p className="text-xs leading-5 text-tinta-2">{EXPLICACAO}</p>}
+      {politica && <div ref={politicaRef}><AvisoPrivacidade acao="foto" temPendente mostrarAlca={false} className="rounded-xl border border-linha" onConfirmar={() => { if (aceitarPrivacidade()) { setPolitica(false); (tipoPendenteRef.current === 'camera' ? entradaCameraRef : entradaGaleriaRef).current?.click(); } }} onCancelar={() => { setPolitica(false); queueMicrotask(() => (tipoPendenteRef.current === 'camera' ? adicionarRef : galeriaRef).current?.focus()); }} /></div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <button ref={adicionarRef} type="button" disabled={ocupado || estado === 'carregando'} onClick={() => iniciarEnvio('camera')} className={`${BOTAO} photo-add w-full bg-verde text-papel inline-flex items-center justify-center gap-2 disabled:opacity-50`}>
+          <Camera size={20} aria-hidden="true" />{ocupado ? 'Enviando…' : 'Tirar foto'}
+        </button>
+        <button ref={galeriaRef} type="button" disabled={ocupado || estado === 'carregando'} onClick={() => iniciarEnvio('galeria')} className={`${BOTAO} w-full border border-verde text-verde inline-flex items-center justify-center gap-2 disabled:opacity-50`}>
+          Escolher da galeria
+        </button>
+      </div>
+      {!podeEnviar && <p className="text-xs leading-5 text-tinta-2">{motivoPresenca(market, posicaoConhecida)}</p>}
       <p className="photo-tip text-[11px] leading-[1.45] text-tinta-2">Fotografe as barracas de longe, evite rostos e placas de carro.</p>
       {fotoAberta && <div className="fixed inset-0 z-[300] bg-tinta/90 p-4 flex flex-col items-center justify-center gap-4" role="dialog" aria-modal="true" aria-label={`Foto ${indice + 1} da feira de ${market.bairro}`}>
         <button ref={fecharRef} type="button" onClick={() => setIndice(null)} aria-label="Fechar foto" className={`${BOTAO} self-end bg-papel text-tinta inline-flex items-center gap-2`}><X size={20} aria-hidden="true" />Fechar</button>
         <img src={fotoAberta.url} alt={`Foto da feira de ${market.bairro}`} width="1600" height="1600" className="max-w-full max-h-[70dvh] object-contain" />
+        <p className="text-sm text-papel text-center">{dataDaFoto(fotoAberta.criadoEm)}{market.day && market.hours && ` · ${market.day.toLowerCase()}, das ${market.hours.replace(/\s*[–-]\s*/, ' às ')}`}</p>
         <div className="flex gap-2 w-full max-w-md justify-between">
           <button data-foto-navegar type="button" onClick={() => setIndice((i) => (i - 1 + visiveis.length) % visiveis.length)} className={`${BOTAO} bg-papel text-tinta inline-flex items-center gap-2`}><ChevronLeft size={20} aria-hidden="true" />Anterior</button>
           <button data-foto-navegar type="button" onClick={() => setIndice((i) => (i + 1) % visiveis.length)} className={`${BOTAO} bg-papel text-tinta inline-flex items-center gap-2`}>Próxima<ChevronRight size={20} aria-hidden="true" /></button>
