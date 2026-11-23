@@ -1,7 +1,7 @@
 \pset tuples_only on
 \pset format unaligned
 BEGIN;
-SELECT plan(30);
+SELECT plan(43);
 
 CREATE FUNCTION pg_temp.como(p_id uuid) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
@@ -24,10 +24,10 @@ FROM pg_catalog.generate_series(1,3) i;
 SELECT pg_temp.como('44444444-4444-4444-8444-000000000001');
 SELECT is(public.pedir_upload_foto('foto1',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000001',pg_catalog.now())->>'codigo','ok','4.1 primeira reserva presente');
 SELECT is(public.registrar_promocao_foto((SELECT id FROM private.fotos WHERE client_uuid='44440000-0000-4000-8000-000000000001'),
-  '44444444-4444-4444-8444-000000000001')->>'estado','revisao','4.2 aparelho de 2 dias vai à revisão');
-SELECT is((SELECT count(*)::integer FROM public.pub_fotos),0,'15.1 revisão não entra em pub_fotos');
+  '44444444-4444-4444-8444-000000000001')->>'estado','visivel','4.2 aparelho de 2 dias publica direto');
+SELECT is((SELECT count(*)::integer FROM public.pub_fotos),1,'15.1 foto nova entra em pub_fotos');
 
--- Quatro fotos jovens: todas em revisão, escolha restritiva para a 4ª.
+-- Quatro fotos jovens publicadas, preservando os limites de reserva.
 DO $$ DECLARE i integer; v jsonb; BEGIN
   FOR i IN 2..4 LOOP
     v := public.pedir_upload_foto('foto'||CASE WHEN i <= 3 THEN 1 ELSE 2 END,-22.923883,-43.260929,10,
@@ -35,10 +35,53 @@ DO $$ DECLARE i integer; v jsonb; BEGIN
     PERFORM public.registrar_promocao_foto((v->>'foto_id')::uuid,'44444444-4444-4444-8444-000000000001');
   END LOOP;
 END $$;
-SELECT is((SELECT count(*)::integer FROM private.fotos WHERE device_id='44444444-4444-4444-8444-000000000001' AND estado='revisao'),4,'9.1 4ª foto jovem continua em revisão');
+SELECT is((SELECT count(*)::integer FROM private.fotos WHERE device_id='44444444-4444-4444-8444-000000000001' AND estado='visivel'),4,'9.1 4 fotos jovens ficam visíveis');
+SELECT is((SELECT count(*)::integer FROM private.fotos WHERE device_id='44444444-4444-4444-8444-000000000001' AND estado='revisao'),0,'9.1b nenhuma foto nova entra em revisão');
 
 SELECT is(public.pedir_upload_foto('foto2',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000005',pg_catalog.now())->>'codigo','ok','9.2 quinto upload diário aceito');
 SELECT is(public.pedir_upload_foto('foto3',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000006',pg_catalog.now())->>'codigo','limite','9.3 sexto upload diário recusado');
+UPDATE public.config SET limite_fotos_dia=10, limite_fotos_semana=5 WHERE id=1;
+SELECT is(public.pedir_upload_foto('foto3',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000007',pg_catalog.now())->>'codigo','limite','9.3b limite semanal do aparelho continua ativo');
+UPDATE public.config SET limite_fotos_dia=5, limite_fotos_semana=20 WHERE id=1;
+
+INSERT INTO public.feiras(id,endereco,bairro,dia,inicio,fim,lat,lng,coord_precisa,status,origem)
+VALUES ('foto_horario','Rua Horário','Grajaú',1,'07:00','13:00',-22.923883,-43.260929,true,'ativa','prefeitura'),
+  ('foto_trecho','Rua Trecho','Grajaú',pg_catalog.date_part('dow',pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::smallint,
+   '00:00','23:59',-22.93,-43.27,true,'ativa','prefeitura');
+SELECT is(public.verificar_presenca('foto_horario',-22.923883,-43.260929,10,'2026-11-23 06:00:00-03',true)->>'codigo','ok','4.2a uma hora antes é aceita');
+SELECT is(public.verificar_presenca('foto_horario',-22.923883,-43.260929,10,'2026-11-23 05:59:00-03',true)->>'codigo','fora_do_horario','4.2b mais de uma hora antes é recusada');
+SELECT is(public.verificar_presenca('foto_horario',-22.923883,-43.260929,10,'2026-11-23 14:00:00-03',true)->>'codigo','ok','4.2c uma hora depois é aceita');
+SELECT is(public.verificar_presenca('foto_horario',-22.923883,-43.260929,10,'2026-11-23 14:01:00-03',true)->>'codigo','fora_do_horario','4.2d mais de uma hora depois é recusada');
+SELECT is(public.verificar_presenca('foto_horario',-22.923883,-43.260929,10,'2026-11-23 06:30:00-03',false)->>'codigo','fora_do_horario','4.2e sem tolerância seria recusada');
+INSERT INTO public.feiras(id,endereco,bairro,dia,inicio,fim,lat,lng,coord_precisa,status,origem)
+VALUES ('foto_madrugada','Rua Madrugada','Grajaú',1,'00:30','02:00',-22.923883,-43.260929,true,'ativa','prefeitura'),
+  ('foto_noite','Rua Noite','Grajaú',1,'22:00','23:30',-22.923883,-43.260929,true,'ativa','prefeitura');
+SELECT is(public.verificar_presenca('foto_madrugada',-22.923883,-43.260929,10,'2026-11-22 23:45:00-03',true)->>'codigo','ok','4.2f tolerância antes atravessa a meia-noite');
+SELECT is(public.verificar_presenca('foto_noite',-22.923883,-43.260929,10,'2026-11-24 00:15:00-03',true)->>'codigo','ok','4.2g tolerância depois atravessa a meia-noite');
+DO $$ DECLARE v_agora timestamp := pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo'; v_inicio time; v_fim time; BEGIN
+  IF v_agora::time < '22:00'::time THEN
+    v_inicio := (v_agora + interval '30 minutes')::time;
+    v_fim := (v_agora + interval '2 hours')::time;
+  ELSE
+    v_inicio := (v_agora - interval '2 hours')::time;
+    v_fim := (v_agora - interval '30 minutes')::time;
+  END IF;
+  INSERT INTO public.feiras(id,endereco,bairro,dia,inicio,fim,lat,lng,coord_precisa,status,origem)
+  VALUES ('foto_janela','Rua Janela','Grajaú',pg_catalog.date_part('dow',v_agora)::smallint,
+    v_inicio,v_fim,-22.923883,-43.260929,true,'ativa','prefeitura');
+END $$;
+SELECT is(public.verificar_presenca('foto_janela',-22.923883,-43.260929,10,pg_catalog.now(),false)->>'codigo','fora_do_horario','4.2h reserva estaria fora do horário estrito');
+SELECT pg_temp.como('44444444-4444-4444-8444-000000000004');
+SELECT is(public.pedir_upload_foto('foto_janela',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000009',pg_catalog.now())->>'codigo','ok','4.2i reserva aceita tolerância de uma hora');
+SELECT pg_temp.como('44444444-4444-4444-8444-000000000001');
+INSERT INTO public.trechos(id,feira_id,pontos,geom,origem,estado)
+VALUES ('44445000-0000-4000-8000-000000000001','foto_trecho','[[-22.923883,-43.261],[-22.923883,-43.260]]'::jsonb,
+  extensions.ST_GeogFromText('SRID=4326;LINESTRING(-43.261 -22.923883,-43.260 -22.923883)'),'curado','aprovada');
+UPDATE public.feiras SET trecho_vigente_id='44445000-0000-4000-8000-000000000001' WHERE id='foto_trecho';
+SELECT is(public.verificar_presenca('foto_trecho',-22.923883,-43.260929,10,pg_catalog.now(),true)->>'codigo','ok','4.3 presença usa o trecho aprovado longe do pino');
+SELECT pg_temp.como('44444444-4444-4444-8444-000000000003');
+SELECT is(public.pedir_upload_foto('foto_trecho',-22.923883,-43.260929,10,'44440000-0000-4000-8000-000000000008',pg_catalog.now())->>'codigo','ok','4.3a foto aceita presença no trecho');
+SELECT pg_temp.como('44444444-4444-4444-8444-000000000001');
 
 -- Limite visível e arquivamento, sem depender dos limites de reserva neste cenário.
 INSERT INTO private.fotos(id,feira_id,device_id,estado,caminho,caminho_mini,client_uuid,criado_em)
@@ -77,8 +120,8 @@ SELECT is((SELECT estado FROM private.fotos WHERE id='44441000-0000-4000-8000-00
 
 UPDATE private.fotos SET criado_em=pg_catalog.now()-interval '31 days', decidido_em=pg_catalog.now()-interval '31 days' WHERE estado IN ('arquivada','revisao');
 SELECT private.marcar_fotos_expiradas();
-SELECT is((SELECT count(*)::integer FROM private.fotos WHERE estado IN ('arquivada','revisao')),0,'4.6 revisão e arquivo de 30 dias saem da tabela');
-SELECT ok((SELECT count(*) FROM private.fotos_para_apagar) >= 10,'4.7 pares de arquivos entram na fila de limpeza');
+SELECT is((SELECT count(*)::integer FROM private.fotos WHERE estado IN ('arquivada','revisao')),0,'4.6 arquivo de 30 dias sai da tabela');
+SELECT ok((SELECT count(*) FROM private.fotos_para_apagar) >= 2,'4.7 par de arquivos arquivados entra na fila de limpeza');
 
 SELECT ok(pg_catalog.has_table_privilege('authenticated','storage.objects','INSERT') AND
   NOT pg_catalog.has_table_privilege('authenticated','storage.objects','SELECT') AND
