@@ -4,15 +4,11 @@ import Header from './components/Header';
 import Hero from './components/Hero';
 import FilterBar from './components/FilterBar';
 import MarketList from './components/MarketList';
-import FeiraSheet from './components/FeiraSheet';
 import Fruta, { MarcaTomate } from './components/Frutas';
 import { acontecendoAgora } from './utils/diaCor';
-import { regiaoDaFeira } from './utils/regiao';
-import AddMarketModal from './components/AddMarketModal';
 import Aviso from './components/Aviso';
 import CarregandoMapa from './components/CarregandoMapa';
 import AvisoPrivacidade from './components/AvisoPrivacidade';
-import ConfirmPrompt from './components/ConfirmPrompt';
 import { useMarkets } from './hooks/useMarkets';
 import {
   apagarMeusDados,
@@ -23,7 +19,6 @@ import {
 } from './api';
 import { calculateDistance, sortMarketsByDistance } from './utils/distance';
 import { appendCoordinates } from './utils/geocoding';
-import { limparFotosEnviadas } from './utils/fotosServidor';
 import {
   carregarConfirmacoes,
   diasDesde,
@@ -38,6 +33,40 @@ const DESLOCAMENTO_MINIMO_KM = 0.025;
 
 // O mapa (MapLibre GL) é pesado: só baixa quando alguém abre o mapa.
 const MarketMap = lazy(() => import('./components/MarketMap'));
+// Folha de detalhes (cartão, fotos e dados de regiões) só baixa ao abrir uma feira.
+const FeiraSheet = lazy(() =>
+  Promise.all([
+    import('./components/FeiraSheet'),
+    import('./utils/regiao'),
+  ]).then(([sheetMod, regiaoMod]) => ({
+    default: function FeiraSheetComRegiao(props) {
+      return (
+        <sheetMod.default
+          {...props}
+          regiaoOrigem={regiaoMod.regiaoDaFeira(props.market)?.origem ?? null}
+        />
+      );
+    },
+  })),
+);
+// Modal de cadastro (carrega Leaflet e confete): só baixa quando o usuário abre.
+const AddMarketModal = lazy(() => import('./components/AddMarketModal'));
+// Pergunta presencial só aparece perto de uma feira no horário dela.
+const ConfirmPrompt = lazy(() => import('./components/ConfirmPrompt'));
+
+const carregandoFolha = (
+  <div
+    role="status"
+    aria-live="polite"
+    className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+  >
+    <div className="absolute inset-0 bg-tinta/30" aria-hidden="true" />
+    <div className="relative w-full max-w-md bg-papel rounded-t-[28px] sm:rounded-[28px] py-10 px-4 flex flex-col items-center justify-center gap-3 shadow-[0_-8px_30px_rgba(59,42,32,0.15)]">
+      <Fruta nome="tomato" className="tomate-pula w-20 h-20" />
+      <p className="text-sm font-bold text-tinta-2 m-0">Carregando...</p>
+    </div>
+  </div>
+);
 
 export default function App() {
   const { markets, isLoading, addMarket, confirmacoesPublicas, recarregarPublicos } = useMarkets();
@@ -270,6 +299,7 @@ export default function App() {
     return apagarMeusDados()
       .then(async (res) => {
         if (res?.codigo !== 'ok') return false;
+        const { limparFotosEnviadas } = await import('./utils/fotosServidor');
         await limparFotosEnviadas();
         setConfirmacoes([]);
         recarregarPublicos();
@@ -572,63 +602,70 @@ export default function App() {
       )}
 
       {feiraAberta && !modoMapa && (
-        <FeiraSheet
-          key={feiraAberta.id}
-          market={feiraAberta}
-          onFechar={fecharFolha}
-          agora={acontecendoAgora(feiraAberta, agora)}
-          agoraData={agora}
-          diasConfirmada={diasConfirmadas[feiraAberta.id] ?? null}
-          semFeiraHoje={Boolean(confirmacoesPublicas?.[feiraAberta.id]?.semFeiraHoje)}
-          regiaoOrigem={regiaoDaFeira(feiraAberta)?.origem ?? null}
-          userLat={userLocation?.lat}
-          userLon={userLocation?.lng}
-          userAccuracy={userLocation?.accuracy}
-          podeRota={Boolean(userLocation)}
-          onAviso={mostrarAviso}
-          onVotoRegistrado={recarregarPublicos}
-          onSugestaoAtualizada={sugestaoAtualizada}
-          onPedirLocal={solicitarLocalizacao}
-          onCorrigirTrecho={(market) => {
-            setFoco({ id: market.id, desenhar: true });
-            setAbertaId(null);
-            setViewMode('map');
-          }}
-          onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
-          onVerRota={() => {
-            // A rota é desenhada no mapa: leva a feira para lá.
-            setFoco({ id: feiraAberta.id, rota: true });
-            setAbertaId(null);
-            setViewMode('map');
-          }}
-        />
+        <Suspense fallback={carregandoFolha}>
+          <FeiraSheet
+            key={feiraAberta.id}
+            market={feiraAberta}
+            onFechar={fecharFolha}
+            agora={acontecendoAgora(feiraAberta, agora)}
+            agoraData={agora}
+            diasConfirmada={diasConfirmadas[feiraAberta.id] ?? null}
+            semFeiraHoje={Boolean(confirmacoesPublicas?.[feiraAberta.id]?.semFeiraHoje)}
+            userLat={userLocation?.lat}
+            userLon={userLocation?.lng}
+            userAccuracy={userLocation?.accuracy}
+            podeRota={Boolean(userLocation)}
+            onAviso={mostrarAviso}
+            onVotoRegistrado={recarregarPublicos}
+            onSugestaoAtualizada={sugestaoAtualizada}
+            onPedirLocal={solicitarLocalizacao}
+            onCorrigirTrecho={(market) => {
+              setFoco({ id: market.id, desenhar: true });
+              setAbertaId(null);
+              setViewMode('map');
+            }}
+            onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
+            onVerRota={() => {
+              // A rota é desenhada no mapa: leva a feira para lá.
+              setFoco({ id: feiraAberta.id, rota: true });
+              setAbertaId(null);
+              setViewMode('map');
+            }}
+          />
+        </Suspense>
       )}
 
-      <AddMarketModal
-          key={backendAtivo ? String(isAddModalOpen) : undefined}
-        isOpen={isAddModalOpen}
-        onClose={fecharModal}
-        onAdd={addMarket}
-        onEnviado={() => {
-          mostrarAviso(mensagemParaCodigo('ok', 'sugerir_feira'));
-          recarregarPublicos();
-        }}
-        onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
-        markets={processedMarkets}
-        onVerFeira={(feira) => {
-          if (modoMapa) setFoco({ id: feira.id });
-          else setAbertaId(feira.id);
-        }}
-      />
+      {isAddModalOpen && (
+        <Suspense fallback={carregandoFolha}>
+          <AddMarketModal
+            key={backendAtivo ? String(isAddModalOpen) : undefined}
+            isOpen={isAddModalOpen}
+            onClose={fecharModal}
+            onAdd={addMarket}
+            onEnviado={() => {
+              mostrarAviso(mensagemParaCodigo('ok', 'sugerir_feira'));
+              recarregarPublicos();
+            }}
+            onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
+            markets={processedMarkets}
+            onVerFeira={(feira) => {
+              if (modoMapa) setFoco({ id: feira.id });
+              else setAbertaId(feira.id);
+            }}
+          />
+        </Suspense>
+      )}
 
       {feiraAgora && (
-        <ConfirmPrompt
-          key={feiraAgora.id}
-          feira={feiraAgora}
-          onAnswer={responderConfirmacao}
-          onDismiss={dispensarConfirmacao}
-          onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
-        />
+        <Suspense fallback={null}>
+          <ConfirmPrompt
+            key={feiraAgora.id}
+            feira={feiraAgora}
+            onAnswer={responderConfirmacao}
+            onDismiss={dispensarConfirmacao}
+            onApagarDados={backendAtivo ? lidarApagarMeusDados : undefined}
+          />
+        </Suspense>
       )}
 
         {backendAtivo && privacidadeAberta && (
