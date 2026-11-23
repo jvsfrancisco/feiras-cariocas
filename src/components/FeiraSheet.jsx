@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import FeiraCartao from './FeiraCartao';
+import { tituloDaFeira } from '../utils/tituloFeira';
 
 // Folha sobre a lista: abre o mesmo cartão com abas do mapa.
 // Fecha com Esc, com toque fora ou no botão de fechar; devolve o foco a quem abriu.
 export default function FeiraSheet({ market, onFechar, ...cartao }) {
   const tituloRef = useRef(null);
   const folhaRef = useRef(null);
+  const titulo = tituloDaFeira(market);
 
   useEffect(() => {
     const anterior = document.activeElement;
@@ -44,7 +46,7 @@ export default function FeiraSheet({ market, onFechar, ...cartao }) {
         ref={folhaRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`Cartão da Feira ${market.bairro}`}
+        aria-label={titulo ? `Cartão da ${titulo}` : `Cartão da Feira ${market.bairro}`}
         className="sheet folha-feira relative w-full max-w-md max-h-[90dvh] flex flex-col bg-papel rounded-t-[28px] sm:rounded-[28px] overflow-hidden shadow-[0_-8px_30px_rgba(59,42,32,0.15)]"
       >
         <span aria-hidden="true" className="sheet-handle w-12 h-[5px] rounded-lg bg-[#CCBDA9] mx-auto mt-2.5 mb-4 shrink-0" />
