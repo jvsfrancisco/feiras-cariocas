@@ -1,12 +1,20 @@
+import { useMemo } from 'react';
 import { CircleCheck, Clock, Navigation, Star, Store } from 'lucide-react';
 import { textoConfirmada } from '../utils/confirmacoes';
 import { diaCurto, formatarKm, modoSugerido, urlGoogleMaps } from '../utils/rotas';
 import { diaCor } from '../utils/diaCor';
+import { registrarFeiras, tituloDaFeira } from '../utils/tituloFeira';
 import { backendAtivo } from '../api';
 import Toldo from './Toldo';
 
 export default function MarketCard({ market, userLat, userLon, index = 0, diasConfirmada = null, agora = false, mostrarDia = false, onAbrir }) {
+  useMemo(() => registrarFeiras([market]), [market]);
   const cor = diaCor(market.day);
+  const titulo = backendAtivo && (market.sugestao || market.isCommunityAdded) && market.nome
+    ? market.nome
+    : tituloDaFeira(market, undefined, { comEndereco: false });
+  // Leitor de tela não vê a rua logo abaixo do título: o nome completo vai no aria-label.
+  const tituloCompleto = tituloDaFeira(market);
 
   const verRota = () => {
     const url = urlGoogleMaps({
@@ -84,15 +92,15 @@ export default function MarketCard({ market, userLat, userLon, index = 0, diasCo
               type="button"
               onClick={() => onAbrir?.(market)}
               aria-haspopup="dialog"
-                aria-label={backendAtivo && market.sugestao
+              aria-label={backendAtivo && market.sugestao
                 ? `Abrir detalhes da sugestão ${market.nome || market.bairro}`
-                  : backendAtivo && market.isCommunityAdded && market.nome
-                    ? `Abrir detalhes da feira ${market.nome}`
-                : `Abrir detalhes e fotos da feira ${market.bairro}`}
+                : backendAtivo && market.isCommunityAdded && market.nome
+                  ? `Abrir detalhes da feira ${market.nome}`
+                  : `Abrir detalhes e fotos da ${tituloCompleto}`}
               className="card-name text-left font-[inherit] hover:underline decoration-2 underline-offset-4 after:content-[''] after:absolute after:inset-0 after:rounded-b-[20px] after:rounded-t-xl focus-visible:after:ring-2 focus-visible:after:ring-verde outline-none"
               style={{ textDecorationColor: cor.forte }}
             >
-                {backendAtivo && (market.sugestao || market.isCommunityAdded) && market.nome ? market.nome : `Feira ${market.bairro}`}
+              {titulo}
             </button>
           </h3>
 
@@ -110,7 +118,7 @@ export default function MarketCard({ market, userLat, userLon, index = 0, diasCo
           <button
             type="button"
             onClick={verRota}
-            aria-label={`Ver rota para a feira de ${market.bairro}`}
+            aria-label={`Ver rota para a ${titulo}`}
             className="route-btn relative z-10 h-12 min-h-12 w-full rounded-full border-2 bg-papel font-bold text-sm inline-flex items-center justify-center gap-2 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-verde focus-visible:ring-offset-2 outline-none"
             style={{ borderColor: cor.forte, color: cor.texto }}
           >

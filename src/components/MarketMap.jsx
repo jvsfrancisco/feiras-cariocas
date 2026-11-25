@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from "maplibre-gl";
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -16,6 +16,7 @@ import { centroDoTrecho } from '../utils/geocoding';
 import { pinoClusterElemento, pinoFeiraElemento, pinoNumeradoElemento, pinoUsuarioElemento } from '../utils/mapPinos';
 import { pontosDaRegiao, regiaoDaFeira } from '../utils/regiao';
 import { modoSugerido } from '../utils/rotas';
+import { registrarFeiras, tituloDaFeira } from '../utils/tituloFeira';
 import { analisarTrechoDesenhado } from '../utils/trechoDesenho';
 
 // Mapa vetorial gratuito e sem chave: OpenFreeMap, estilo "positron" (claro e minimalista).
@@ -26,6 +27,8 @@ const COR_VERDE = '#5B7A3A';
 const COR_MEARIM = '#C73A22';
 // A partir deste zoom, a região de todas as feiras visíveis no filtro é desenhada.
 const ZOOM_REGIOES = 14;
+// A partir deste zoom, os pinos numerados do trecho curado substituem o pino central da feira.
+const ZOOM_DETALHE_TRECHO = 16;
 
 const lngLat = ([lat, lng]) => [lng, lat];
 
@@ -116,7 +119,12 @@ function adicionarCamadas(map) {
     data: VAZIO,
     cluster: true,
     clusterRadius: 48,
-    clusterMaxZoom: 14,
+    clusterMaxZoom: 12,
+  });
+  // Feiras com trecho manual ficam fora do cluster para manter identidade em qualquer zoom.
+  map.addSource('feiras-trecho', {
+    type: 'geojson',
+    data: VAZIO,
   });
 
   const linhaOsm = ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'manual'], false], ['!=', ['get', 'proposta'], true]];
@@ -144,6 +152,7 @@ function adicionarCamadas(map) {
   map.addLayer({ id: 'desenho-contorno', type: 'line', source: 'desenho-trecho', layout: arredondada, paint: { 'line-color': PAPEL, 'line-width': 9 } });
   map.addLayer({ id: 'desenho-linha', type: 'line', source: 'desenho-trecho', layout: arredondada, paint: { 'line-color': ['get', 'cor'], 'line-width': 5 } });
   map.addLayer({ id: 'feiras-pontos', type: 'circle', source: 'feiras', paint: { 'circle-radius': 0, 'circle-opacity': 0 } });
+  map.addLayer({ id: 'feiras-trecho-pontos', type: 'circle', source: 'feiras-trecho', paint: { 'circle-radius': 0, 'circle-opacity': 0 } });
 }
 
 export default function MarketMap({
@@ -164,6 +173,7 @@ export default function MarketMap({
   onSugestaoAtualizada,
   onApagarDados,
 }) {
+  useMemo(() => registrarFeiras(markets), [markets]);
   const posicaoUsuario = userLat && userLon ? [userLat, userLon] : null;
   const hoje = nomeDoDia(agora);
 
@@ -171,6 +181,7 @@ export default function MarketMap({
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [selecionadaId, setSelecionadaId] = useState(null);
   const [zoomAlto, setZoomAlto] = useState(false);
+  const [zoomDetalheTrecho, setZoomDetalheTrecho] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [erroMapa, setErroMapa] = useState(false);
   // Tela de carregamento: some com fade de 200 ms quando o mapa fica pronto (ou dá erro) e depois desmonta.
@@ -202,12 +213,21 @@ export default function MarketMap({
   const cameraAntesDesenhoRef = useRef(null);
   const enquadrouDesenhoRef = useRef(false);
   const centralizadoRef = useRef(false);
+  const selecionadaIdRef = useRef(null);
+  useEffect(() => {
+    selecionadaIdRef.current = selecionadaId;
+  }, [selecionadaId]);
+
   const fechar = useCallback(() => {
-    const id = selecionadaId;
+    const id = selecionadaIdRef.current;
     setSelecionadaId(null);
     setActiveRoute(null);
-    requestAnimationFrame(() => requestAnimationFrame(() => marcadoresRef.current.get(id)?.marker.getElement().focus()));
-  }, [selecionadaId]);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const alvo = marcadoresRef.current.get(id)?.marker.getElement()
+        ?? trechoMarcadoresRef.current.find((m) => m.id === id)?.el;
+      alvo?.focus();
+    }));
+  }, []);
 
   // A feira selecionada some do cartão se o filtro a tirar da lista.
   const selecionada = markets.find((m) => m.id === selecionadaId) ?? null;
@@ -288,7 +308,11 @@ export default function MarketMap({
       }
     }
 
-    const atualizarZoom = () => setZoomAlto(map.getZoom() >= ZOOM_REGIOES);
+    const atualizarZoom = () => {
+      const zoom = map.getZoom();
+      setZoomAlto(zoom >= ZOOM_REGIOES);
+      setZoomDetalheTrecho(zoom >= ZOOM_DETALHE_TRECHO);
+    };
     map.on('load', () => {
       ajustarEstilo(map);
       adicionarCamadas(map);
@@ -526,30 +550,37 @@ export default function MarketMap({
     fonte.setData({ type: 'FeatureCollection', features });
   }, [markets, selecionadaId, zoomAlto, pronto, desenhoAtivo]);
 
-  // Fonte agrupada (cluster) das feiras: exclui a selecionada e, no zoom >= ZOOM_REGIOES, o trecho curado da Mearim.
+  // Fonte agrupada (cluster, até zoom 12) para feiras comuns; fonte separada sem cluster para feiras com trecho manual.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pronto) return;
-    const fonte = map.getSource('feiras');
-    if (!fonte) return;
-    const features = [];
+    const fonteCluster = map.getSource('feiras');
+    const fonteTrecho = map.getSource('feiras-trecho');
+    if (!fonteCluster || !fonteTrecho) return;
     if (desenhoAtivo) {
-      fonte.setData(VAZIO);
+      fonteCluster.setData(VAZIO);
+      fonteTrecho.setData(VAZIO);
       return;
     }
+    const featuresCluster = [];
+    const featuresTrecho = [];
     markets.forEach((market) => {
       const ponto = pontoDaFeira(market);
       if (!ponto) return;
-      if (market.id === selecionadaId) return;
-      if (ehTrechoCuradoMearim(market) && zoomAlto) return;
-      features.push({
+      const feature = {
         type: 'Feature',
         properties: { id: String(market.id) },
         geometry: { type: 'Point', coordinates: [ponto.lng, ponto.lat] },
-      });
+      };
+      if (temTrechoManual(market)) {
+        featuresTrecho.push(feature);
+      } else if (market.id !== selecionadaId) {
+        featuresCluster.push(feature);
+      }
     });
-    fonte.setData({ type: 'FeatureCollection', features });
-  }, [markets, selecionadaId, zoomAlto, pronto, desenhoAtivo]);
+    fonteCluster.setData({ type: 'FeatureCollection', features: featuresCluster });
+    fonteTrecho.setData({ type: 'FeatureCollection', features: featuresTrecho });
+  }, [markets, selecionadaId, pronto, desenhoAtivo]);
 
   const expandirCluster = useCallback(async (clusterId, coords) => {
     const map = mapRef.current;
@@ -566,7 +597,7 @@ export default function MarketMap({
   // Pinos das feiras e círculos de cluster. Atualiza ao mover/carregar fonte lendo querySourceFeatures.
   const sincronizarPinos = useCallback(() => {
     const map = mapRef.current;
-    if (!map || !pronto || !map.getSource('feiras')) return;
+    if (!map || !pronto || !map.getSource('feiras') || !map.getSource('feiras-trecho')) return;
     if (desenhoAtivo) {
       marcadoresRef.current.forEach(({ marker }) => marker.remove());
       marcadoresRef.current.clear();
@@ -575,19 +606,25 @@ export default function MarketMap({
       return;
     }
 
-    const trechoAtivo = (market) => ehTrechoCuradoMearim(market) && (zoomAlto || market.id === selecionadaId);
-    const temFeirasNoFonte = markets.some(
-      (market) => Boolean(pontoDaFeira(market)) && market.id !== selecionadaId && !trechoAtivo(market),
+    const trechoAtivo = (market) => ehTrechoCuradoMearim(market) && (zoomDetalheTrecho || market.id === selecionadaId);
+    const temFeirasNoCluster = markets.some(
+      (market) => Boolean(pontoDaFeira(market)) && market.id !== selecionadaId && !temTrechoManual(market),
     );
-    const carregada = !temFeirasNoFonte || map.isSourceLoaded('feiras');
-    const features = carregada && temFeirasNoFonte ? map.querySourceFeatures('feiras') : [];
+    const temFeirasNoTrecho = markets.some(
+      (market) => Boolean(pontoDaFeira(market)) && temTrechoManual(market),
+    );
+    const carregadaCluster = !temFeirasNoCluster || map.isSourceLoaded('feiras');
+    const carregadaTrecho = !temFeirasNoTrecho || map.isSourceLoaded('feiras-trecho');
+    const featuresCluster = carregadaCluster && temFeirasNoCluster ? map.querySourceFeatures('feiras') : [];
+    const featuresTrecho = carregadaTrecho && temFeirasNoTrecho ? map.querySourceFeatures('feiras-trecho') : [];
 
     const clustersExistentes = clustersRef.current;
-    const feirasVisiveis = new Set();
+    const feirasClusterVisiveis = new Set();
+    const feirasTrechoVisiveis = new Set();
 
-    if (carregada) {
+    if (carregadaCluster) {
       const clustersVistos = new Map();
-      features.forEach((f) => {
+      featuresCluster.forEach((f) => {
         if (f.properties?.cluster) {
           const cid = f.properties.cluster_id;
           if (!clustersVistos.has(cid)) {
@@ -598,7 +635,7 @@ export default function MarketMap({
             });
           }
         } else if (f.properties?.id !== undefined) {
-          feirasVisiveis.add(String(f.properties.id));
+          feirasClusterVisiveis.add(String(f.properties.id));
         }
       });
 
@@ -623,6 +660,14 @@ export default function MarketMap({
       });
     }
 
+    if (carregadaTrecho) {
+      featuresTrecho.forEach((f) => {
+        if (f.properties?.id !== undefined) {
+          feirasTrechoVisiveis.add(String(f.properties.id));
+        }
+      });
+    }
+
     const existentes = marcadoresRef.current;
     const presentes = new Set();
     let novos = 0;
@@ -630,17 +675,21 @@ export default function MarketMap({
     markets.forEach((market) => {
       const ponto = pontoDaFeira(market);
       if (!ponto) return;
-      // No zoom >= ZOOM_REGIOES (ou quando selecionada), a feira com trecho manual (Mearim) é representada pelos 3 pinos numerados.
+      // No zoom >= ZOOM_DETALHE_TRECHO (16) ou quando selecionada, a feira com trecho curado (Mearim) é representada pelos 3 pinos numerados.
       if (trechoAtivo(market)) return;
+      const ehManual = temTrechoManual(market);
       const selecionadaAqui = market.id === selecionadaId;
-      const visivel = selecionadaAqui || (carregada ? feirasVisiveis.has(String(market.id)) : existentes.has(market.id));
+      const fonteCarregada = ehManual ? carregadaTrecho : carregadaCluster;
+      const conjuntoVisivel = ehManual ? feirasTrechoVisiveis : feirasClusterVisiveis;
+      const visivel = selecionadaAqui || (fonteCarregada ? conjuntoVisivel.has(String(market.id)) : existentes.has(market.id));
       if (!visivel) return;
       presentes.add(market.id);
 
       const confirmada = diasConfirmadas[market.id] !== undefined;
       const agoraAqui = acontecendoAgora(market, agora);
       const ehHoje = market.day === hoje;
-      const assinatura = [market.day, market.sugestao, confirmada, selecionadaAqui, agoraAqui, ehHoje, ponto.lat, ponto.lng].join('|');
+      const titulo = tituloDaFeira(market);
+      const assinatura = [titulo, market.day, market.sugestao, confirmada, selecionadaAqui, agoraAqui, ehHoje, ehManual, ponto.lat, ponto.lng].join('|');
       const atual = existentes.get(market.id);
       if (atual && atual.assinatura === assinatura) return;
 
@@ -653,6 +702,7 @@ export default function MarketMap({
         selecionada: selecionadaAqui,
         agora: !market.sugestao && agoraAqui,
         ehHoje,
+        destaque: ehManual,
         atraso,
         onClick: () => selecionar(market),
       });
@@ -667,7 +717,7 @@ export default function MarketMap({
         existentes.delete(id);
       }
     });
-  }, [markets, diasConfirmadas, agora, hoje, selecionadaId, zoomAlto, pronto, selecionar, expandirCluster, desenhoAtivo]);
+  }, [markets, diasConfirmadas, agora, hoje, selecionadaId, zoomDetalheTrecho, pronto, selecionar, expandirCluster, desenhoAtivo]);
 
   useEffect(() => {
     sincronizarPinos();
@@ -678,13 +728,13 @@ export default function MarketMap({
     marcadoresRef.current.forEach(({ marker }) => { marker.getElement().style.pointerEvents = pointerEvents; });
     clustersRef.current.forEach(({ marker }) => { marker.getElement().style.pointerEvents = pointerEvents; });
     trechoMarcadoresRef.current.forEach(({ el }) => { el.style.pointerEvents = pointerEvents; });
-  }, [desenhoAtivo, markets, selecionadaId, zoomAlto, pronto]);
+  }, [desenhoAtivo, markets, selecionadaId, zoomAlto, zoomDetalheTrecho, pronto]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pronto) return undefined;
     const aoFonte = (e) => {
-      if (e.sourceId === 'feiras') {
+      if (e.sourceId === 'feiras' || e.sourceId === 'feiras-trecho') {
         sincronizarPinos();
         map.once('render', sincronizarPinos);
       }
@@ -704,7 +754,7 @@ export default function MarketMap({
     };
   }, [pronto, sincronizarPinos]);
 
-  // Trecho curado da Mearim: três pinos numerados (1, 2, 3), mostrados no zoom >= ZOOM_REGIOES ou quando selecionada.
+  // Trecho curado da Mearim: três pinos numerados (1, 2, 3), mostrados no zoom >= ZOOM_DETALHE_TRECHO (16) ou quando selecionada.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pronto) return undefined;
@@ -716,6 +766,7 @@ export default function MarketMap({
       const regiao = regiaoDaFeira(market);
       const trecho = regiao.linhas[0];
       const selecionadaAqui = market.id === selecionadaId;
+      const titulo = tituloDaFeira(market);
       trecho.forEach((ponto, i) => {
         const p = info.pontos[i];
         if (!p) return;
@@ -723,6 +774,7 @@ export default function MarketMap({
           numero: i + 1,
           rotulo: p.rotulo,
           dia: market.day,
+          titulo,
           selecionada: selecionadaAqui,
           onClick: () => selecionar(market),
         });
@@ -730,35 +782,31 @@ export default function MarketMap({
           element: el,
           anchor: 'bottom',
         }).setLngLat(lngLat(ponto));
-        trechoMarcadoresRef.current.push({ marker, el, selecionada: selecionadaAqui, noMapa: false });
+        trechoMarcadoresRef.current.push({ id: market.id, marker, el, selecionada: selecionadaAqui, noMapa: false });
       });
     });
 
-    const atualizarTrechoMarcadores = () => {
-      const emZoomAlto = map.getZoom() >= ZOOM_REGIOES;
-      trechoMarcadoresRef.current.forEach((item) => {
-        const mostrar = !desenhoAtivo && (emZoomAlto || item.selecionada);
-        item.el.style.display = mostrar ? '' : 'none';
-        if (mostrar && !item.noMapa) {
-          item.marker.addTo(map);
-          item.noMapa = true;
-        } else if (!mostrar && item.noMapa) {
-          item.marker.remove();
-          item.noMapa = false;
-        }
-      });
-    };
-
-    atualizarTrechoMarcadores();
-    map.on('zoom', atualizarTrechoMarcadores);
-    map.on('moveend', atualizarTrechoMarcadores);
     return () => {
-      map.off('zoom', atualizarTrechoMarcadores);
-      map.off('moveend', atualizarTrechoMarcadores);
       trechoMarcadoresRef.current.forEach((m) => m.marker.remove());
       trechoMarcadoresRef.current = [];
     };
-  }, [markets, selecionadaId, pronto, selecionar, desenhoAtivo]);
+  }, [markets, selecionadaId, pronto, selecionar]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pronto) return;
+    trechoMarcadoresRef.current.forEach((item) => {
+      const mostrar = !desenhoAtivo && (zoomDetalheTrecho || item.selecionada);
+      item.el.style.display = mostrar ? '' : 'none';
+      if (mostrar && !item.noMapa) {
+        item.marker.addTo(map);
+        item.noMapa = true;
+      } else if (!mostrar && item.noMapa) {
+        item.marker.remove();
+        item.noMapa = false;
+      }
+    });
+  }, [markets, selecionadaId, pronto, desenhoAtivo, zoomDetalheTrecho]);
 
   // Posição do usuário e centralização única.
   useEffect(() => {
@@ -876,7 +924,7 @@ export default function MarketMap({
       {selecionada && !desenho && (
         <aside
           ref={cartaoRef}
-          aria-label={`Cartão da Feira ${selecionada.bairro}`}
+          aria-label={`Cartão da ${tituloDaFeira(selecionada)}`}
           className="sheet absolute inset-x-0 bottom-0 mx-auto max-w-md max-h-[72dvh] flex flex-col z-[1000] bg-papel rounded-t-[28px] overflow-hidden shadow-[0_-8px_30px_rgba(59,42,32,0.15)]"
         >
           <span aria-hidden="true" className="sheet-handle w-12 h-[5px] rounded-lg bg-[#CCBDA9] mx-auto mt-2.5 mb-2 shrink-0" />

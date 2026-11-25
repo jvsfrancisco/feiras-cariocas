@@ -35,6 +35,8 @@ export const MENSAGENS_CODIGO = {
   texto_proibido: 'O texto contém termos não permitidos.',
   encerrada: 'Esta votação já foi encerrada.',
   sem_conexao: 'Sem conexão. Tente de novo quando a internet voltar.',
+  upload_falhou: 'Não foi possível enviar a imagem agora. Tente novamente.',
+  servidor: 'O serviço não conseguiu concluir esta ação agora. Tente novamente mais tarde.',
   captcha: 'Não deu para confirmar que você é uma pessoa. Confira a internet e tente de novo.',
 };
 

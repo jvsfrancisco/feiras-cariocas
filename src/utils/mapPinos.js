@@ -1,5 +1,6 @@
 // Elementos HTML dos marcadores do mapa (MapLibre). Sem Leaflet.
 import { diaCor } from './diaCor';
+import { tituloDaFeira } from './tituloFeira';
 
 const PAPEL = '#FFFDF8';
 
@@ -20,11 +21,16 @@ export function pinoFeiraElemento({
   selecionada = false,
   agora = false,
   ehHoje = false,
+  destaque = false,
+  todas,
   numero = '',
   atraso = null,
   onClick,
 }) {
   const cor = diaCor(market.day);
+  const titulo = tituloDaFeira(market, todas);
+  const enderecoNoTitulo = Boolean(market.address && titulo.includes(market.address));
+  const detalhesEndereco = market.address && !enderecoNoTitulo ? `, ${market.address}` : '';
 
   const el = document.createElement('button');
   el.type = 'button';
@@ -33,10 +39,10 @@ export function pinoFeiraElemento({
   if (selecionada) el.dataset.selected = 'true';
   el.style.setProperty('--pin', cor.forte);
   el.style.setProperty('--pin-on', cor.sobreForte);
-  el.style.zIndex = selecionada ? '10' : ehHoje ? '3' : '1';
+  el.style.zIndex = selecionada ? '10' : (ehHoje || destaque) ? '3' : '1';
   el.setAttribute(
     'aria-label',
-    `Feira ${market.bairro}, ${market.address}, ${market.day}${agora ? ', acontecendo agora' : ''}${confirmada ? ', com confirmação recente' : ''}, abrir cartão`,
+    `${titulo}${detalhesEndereco}, ${market.day}${agora ? ', acontecendo agora' : ''}${confirmada ? ', com confirmação recente' : ''}, abrir cartão`,
   );
 
   const reduzirMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -51,7 +57,7 @@ export function pinoFeiraElemento({
     el.style.opacity = market.sugestao === 'minha' ? '0.7' : '0.78';
     const forma = el.querySelector('.pin-shape');
     if (forma) forma.style.borderStyle = 'dashed';
-    el.setAttribute('aria-label', `${market.sugestao === 'minha' ? 'Sua sugestão aguardando confirmação' : 'Sugestão da comunidade'}, ${market.nome || market.bairro}, abrir cartão`);
+    el.setAttribute('aria-label', `${market.sugestao === 'minha' ? 'Sua sugestão aguardando confirmação' : 'Sugestão da comunidade'}, ${market.nome || titulo}, abrir cartão`);
   }
   if (onClick) {
     el.addEventListener('click', (e) => {
@@ -75,7 +81,7 @@ export function pinoUsuarioElemento() {
 }
 
 // Pino numerado do trecho marcado à mão (Mearim: 1, 2, 3): gota 36x42 px girada em botão de 48x48 px.
-export function pinoNumeradoElemento({ numero, rotulo, dia, selecionada = false, onClick }) {
+export function pinoNumeradoElemento({ numero, rotulo, dia, titulo = 'Feira da Mearim', selecionada = false, onClick }) {
   const cor = diaCor(dia);
   const el = document.createElement('button');
   el.type = 'button';
@@ -85,7 +91,7 @@ export function pinoNumeradoElemento({ numero, rotulo, dia, selecionada = false,
   el.style.setProperty('--pin', cor.forte);
   el.style.setProperty('--pin-on', cor.sobreForte);
   el.style.zIndex = selecionada ? '10' : '4';
-  el.setAttribute('aria-label', `Feira da Mearim, ponto ${numero}${rotulo ? `, ${rotulo}` : ''}, abrir cartão`);
+  el.setAttribute('aria-label', `${titulo}, ponto ${numero}${rotulo ? `, ${rotulo}` : ''}, abrir cartão`);
 
   const shape = document.createElement('span');
   shape.className = 'pin-shape';

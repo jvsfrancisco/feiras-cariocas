@@ -519,8 +519,8 @@ SELECT is(
       AND pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
     ORDER BY 1
   ),
-  ARRAY['public.ping'],
-  'Critério 16.4: anon tem EXECUTE apenas em public.ping'
+  ARRAY['public.cancelar_aviso', 'public.ping', 'public.registrar_aviso'],
+  'Critério 16.4: anon tem EXECUTE apenas em public.ping e nas funções de aviso de bairro'
 );
 
 -- 23. Funções em pg_proc com EXECUTE para authenticated == apenas apagar_meus_dados, confirmar, ping, propor_trecho e votar_trecho
@@ -533,7 +533,7 @@ SELECT is(
       AND pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')
     ORDER BY 1
   ),
-  ARRAY['public.apagar_meus_dados', 'public.apoiar_sugestao', 'public.confirmar', 'public.denunciar_foto', 'public.denunciar_sugestao', 'public.minhas_sugestoes', 'public.pedir_upload_foto', 'public.ping', 'public.propor_trecho', 'public.sugerir_feira', 'public.votar_trecho'],
+  ARRAY['public.apagar_meus_dados', 'public.apoiar_sugestao', 'public.cancelar_aviso', 'public.confirmar', 'public.denunciar_foto', 'public.denunciar_sugestao', 'public.minhas_sugestoes', 'public.pedir_upload_foto', 'public.ping', 'public.propor_trecho', 'public.registrar_aviso', 'public.sugerir_feira', 'public.votar_trecho'],
   'Critério 16.5: authenticated tem EXECUTE apenas em public.apagar_meus_dados, public.confirmar, public.ping, public.propor_trecho e public.votar_trecho'
 );
 

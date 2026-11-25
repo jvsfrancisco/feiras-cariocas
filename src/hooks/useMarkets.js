@@ -2,8 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { INITIAL_FEIRAS } from '../data/feiras';
 import { backendAtivo, carregarDadosPublicos, carregarSugestoesPublicas, minhasSugestoes } from '../api';
 import { adaptarSugestao, lerMapaIds } from '../utils/sugestoes';
+import { acharDuplicada } from '../utils/duplicadas';
 
 const CHAVE_CUSTOM = 'feiras_cariocas_custom';
+
+function normalizarEndereco(endereco) {
+  return String(endereco ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
 
 function lerCustom() {
   try {
@@ -83,6 +89,11 @@ export function useMarkets() {
   }, [aplicarDados]);
 
   const addMarket = (newMarket) => {
+    const endereco = normalizarEndereco(newMarket.address);
+    const locaisIdenticas = lerCustom().filter((feira) => feira.day === newMarket.day
+      && endereco && normalizarEndereco(feira.address) === endereco);
+    if (acharDuplicada(newMarket, locaisIdenticas)) return null;
+
     const marketWithMeta = {
       ...newMarket,
       id: Date.now().toString(),
